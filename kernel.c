@@ -1,12 +1,11 @@
-volatile unsigned int * const UART0DR = (unsigned int *) 0x9000000;
+#include "uart.h"
+#include "framebuffer.h"
+#include "pci.h"
 
-void put_uart(const char *s) {
-  while(*s != '\0') {
-    *UART0DR = (unsigned int)(*s);
-    s++;
-  }
-}
 
 void kernel_main() {
-  put_uart("Hello craybond!\n");
+  
+  uart_puts("Hello craybond!\n");
+  gpu_init();
+
 }

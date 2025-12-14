@@ -1,21 +1,37 @@
+# Compiler and Linker
+ARCH= aarch64-none-elf
+CC = $(ARCH)-gcc
+LD = $(ARCH)-ld
+OBJCOPY = $(ARCH)-objcopy
 
-sname := $(shell uname -s)
 
-CROSS_PREFIX=aarch64-none-elf-
+# Compiler and Linker Flags
+CFLAGS = -nostdlib -ffreestanding -Wall -Wextra -mcpu=cortex-a72
+LDFLAGS = -T $(shell ls *.ld)
 
-all: os.elf
+C_SRC = $(wildcard *.c)
+ASM_SRC = $(wildcard *.S)
+OBJ = $(C_SRC:.c=.o) $(ASM_SRC:.S=.o)
 
-kernel.o: kernel.c
-	$(CROSS_PREFIX)gcc -c $< -o $@
+# Output File
+TARGET = kernel.elf
 
-boot.o: boot.s
-	$(CROSS_PREFIX)as -c $< -o $@
 
-os.elf: kernel.o boot.o 
-	$(CROSS_PREFIX)ld -T linker.ld $^ -o $@
+# Build Rules
+all: $(TARGET)
 
-os.bin: os.elf 
-	$(CROSS_PREFIX)objcopy -O binary $< $@
+
+$(TARGET): $(OBJ)
+	$(LD) $(LDFLAGS) -o kernel.bin $(OBJ)
+	$(OBJCOPY) -O binary kernel.bin $(TARGET)
+
+%.o: %.S
+
+	$(CC) $(CFLAGS) -c $< -o $@
+
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f os.bin os.elf boot.o kernel.o
+	rm -f $(OBJ) kernel.bin kernel.elf $(TARGET)
