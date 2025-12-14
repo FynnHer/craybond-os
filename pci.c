@@ -82,7 +82,7 @@ uint64_t find_pci_device(uint32_t vendor_id, uint32_t device_id, uint64_t* out_m
 
 void dump_pci_config(uint64_t base) {
   uart_puts("Dumping PCI Configuration Space:\n");
-  for (uint32_t offset = 0; offset < 0x40; offest += 4) {
+  for (uint32_t offset = 0; offset < 0x40; offset += 4) {
     uint64_t val = mmio_read(base + offset);
     uart_puts("Offset ");
     uart_puthex(offset);

@@ -29,7 +29,7 @@ uint64_t setup_gpu_bars(uint64_t base) {
   uint64_t bar4 = mmio_read(base + PCI_BAR4);
   uint64_t bar5 = mmio_read(base + PCI_BAR5);
 
-  if (bar4 == 0 || bar4 = 0xFFFFFFFF) {
+  if (bar4 == 0 || bar4 == 0xFFFFFFFF) {
     uart_puts("BAR4 size probing failed\n");
     return 0x0;
   }
@@ -54,7 +54,7 @@ void virtio_gpu_display_on(uint64_t base_addr) {
   // setup virtqueue (assuming queue 0 for simplicity)
   mmio_write(base_addr + 0x30, 0); // queue selected
   mmio_write(base_addr + 0x38, 128); // queue size
-  mmio_write(base_addr + 0x3C, 1) // queue enabled
+  mmio_write(base_addr + 0x3C, 1); // queue enabled
 
 
   // send display on command
@@ -72,7 +72,7 @@ void virtio_gpu_display_on(uint64_t base_addr) {
 }
 
 void virtio_gpu_init(uint64_t base_addr) {
-  mmio_write(base + 0x14, 0); // Reset the device
+  mmio_write(base_addr + 0x14, 0); // Reset the device
 
   while (mmio_read(base_addr + 0x14) != 0);
 
