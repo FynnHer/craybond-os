@@ -10,7 +10,7 @@ void mmio_write8(uintptr_t addr, uint8_t value) {
 }
 
 uint16_t mmio_read16(uintptr_t addr) {
-  return *(volatile uint16_t*) addr = value;
+  return *(volatile uint16_t*) addr;
 }
 
 void mmio_write16 (uintptr_t addr, uint16_t value) {
