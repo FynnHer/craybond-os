@@ -3,14 +3,14 @@
 #include "mmio.h"
 #include "string.h"
 
-#define FW_CFG_DATA     0x09020000
-#define FW_CFG_CTL      (FW_CFG_DATA + 0x8)
-#define FW_CFG_DMA      (FW_CFG_DATA + 0x10)
+#define FW_CFG_DATA  0x09020000
+#define FW_CFG_CTL   (FW_CFG_DATA + 0x8)
+#define FW_CFG_DMA   (FW_CFG_DATA + 0x10)
 
-#define FW_CFG_DMA_READ    0x2
-#define FW_CFG_DMA_SELECT  0x8
-#define FW_CFG_DMA_WRITE  0x10
-#define FW_CFG_DMA_ERROR   0x1
+#define FW_CFG_DMA_READ 0x2
+#define FW_CFG_DMA_SELECT 0x8
+#define FW_CFG_DMA_WRITE 0x10
+#define FW_CFG_DMA_ERROR 0x1
 
 #define FW_LIST_DIRECTORY 0x19
 
@@ -36,11 +36,16 @@ void fw_cfg_dma_read(void* dest, uint32_t size, uint32_t ctrl) {
     __asm__("ISB");
 
     while (__builtin_bswap32(access.control) & ~0x1) {}
+    
+}
+
+void fw_cfg_dma_write(void* dest, uint32_t size, uint32_t ctrl){
+    fw_cfg_dma_read(dest, size, (ctrl << 16) | FW_CFG_DMA_SELECT | FW_CFG_DMA_WRITE);
 }
 
 struct fw_cfg_file* fw_find_file(string search) {
 
-    struct fw_cfg_file *file = (struct fw_cfg_file *)alloc(sizueof(struct fw_cfg_file));
+    struct fw_cfg_file *file = (struct fw_cfg_file *)alloc(sizeof(struct fw_cfg_file));
     uint32_t count;
     fw_cfg_dma_read(&count, sizeof(count), (FW_LIST_DIRECTORY << 16) | FW_CFG_DMA_SELECT | FW_CFG_DMA_READ);
 

@@ -1,8 +1,8 @@
 #include "uart.h"
 #include "mmio.h"
 #include "string.h"
-
 #include "fw/fw_cfg.h"
+#include "graph/font8x8_basic.h"
 
 #define RGB_FORMAT_XRGB8888 ((uint32_t)('X') | ((uint32_t)('R') << 8) | ((uint32_t)('2') << 16) | ((uint32_t)('4') << 24))
 
@@ -36,10 +36,8 @@ void rfb_clear(uint32_t color){
     }
 }
 
-void rfb_draw_pixel(uint32_t x, uint32_t y, uint32_t color){
-    if (x >= width || y >= height) {
-        return;
-    }
+void rfb_draw_pixel(uint32_t x, uint32_t y, uint32_t color) {
+    if (x >= width || y >= height) return;
     volatile uint32_t* fb = (volatile uint32_t*)fb_ptr;
     fb[y * (stride / 4) + x] = color;
 }
@@ -68,6 +66,18 @@ void rfb_draw_line(uint32_t x0, uint32_t y0, uint32_t x1, uint32_t y1, uint32_t 
     }
 }
 
+void rfb_draw_char(uint32_t x, uint32_t y, char c, uint32_t color) {
+    const uint8_t* glyph = font8x8_basic[(uint8_t)c];
+    for (uint32_t row = 0; row < 8; row++) {
+        uint8_t bits = glyph[row];
+        for (uint32_t col = 0; col < 8; col++) {
+            if (bits & (1 << (7 - col))) {
+                rfb_draw_pixel(x + col, y + row, color);
+            }
+        }
+    }
+}
+
 bool rfb_init(uint32_t w, uint32_t h) {
 
     if (!fw_cfg_check()){
@@ -77,6 +87,7 @@ bool rfb_init(uint32_t w, uint32_t h) {
 
     width = w;
     height = h;
+
     bpp = 4;
     stride = bpp * width;
 
@@ -97,9 +108,8 @@ bool rfb_init(uint32_t w, uint32_t h) {
         uart_puts("Ramfb not found\n");
         return false;
     }
-    
-    uint32_t control = (file->selector << 16) | FW_CFG_DMA_SELECT | FW_CFG_DMA_WRITE;
-    fw_cfg_dma_read(&fb, sizeof(fb), control);
+
+    fw_cfg_dma_write(&fb, sizeof(fb), file->selector);
     
     uart_puts("ramfb configured\n");
 
@@ -108,6 +118,6 @@ bool rfb_init(uint32_t w, uint32_t h) {
     return true;
 }
 
-void rfb_flush() {
-    // Nothing to do, RAMFB is always up to date
+void rfb_flush(){
+    
 }
