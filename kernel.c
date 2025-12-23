@@ -9,9 +9,11 @@ void kernel_main() {
   
   uart_puts("Hello craybond!\n");
   uart_puts("Preparing for drawing...\n");
-  //gpu_debug();
+
   gpu_init();
-  //gpu_clear(0x00FF00FF);
+
+  gpu_clear(0x00FF00FF); // ARGB - Blue screen
+
   uart_puts("Square drawn\n");
 
 }
