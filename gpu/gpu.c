@@ -12,17 +12,17 @@ typedef enum {
 
 SupportedGPU chosen_GPU;
 
-void gpu_init() {
-    if (vgp_init())
+void gpu_init(size prefered_screen_size){
+    if (vgp_init(prefered_screen_size.width, prefered_screen_size.height))
         chosen_GPU = VIRTIO_GPU_PCI;
-    if (rfb_init())
+    if (rfb_init(prefered_screen_size.width, prefered_screen_size.height))
         chosen_GPU = RAMFB;
     uart_puts("Selected and initialized GPU ");
     uart_puthex(chosen_GPU);
     uart_putc('\n');
 }
 
-void gpu_flush() {
+void gpu_flush(){
     switch (chosen_GPU) {
         case VIRTIO_GPU_PCI:
             vgp_flush();
@@ -34,8 +34,7 @@ void gpu_flush() {
             break;
     }
 }
-
-void gpu_clear(color color) {
+void gpu_clear(color color){
     switch (chosen_GPU) {
         case VIRTIO_GPU_PCI:
             vgp_clear(color);
@@ -47,29 +46,41 @@ void gpu_clear(color color) {
     }
 }
 
-void gpu_draw_pixel(point p, color color) {
+void gpu_draw_pixel(point p, color color){
     switch (chosen_GPU) {
         case VIRTIO_GPU_PCI:
-            vgp_draw_pixel(p.x, p.y, color);
+            vgp_draw_pixel(p.x,p.y,color);
         break;
         case RAMFB:
-            rfb_draw_pixel(p.x, p.y, color);
+            rfb_draw_pixel(p.x,p.y,color);
         break;
         default:
         break;
     }
 }
 
-void gpu_fill_rect(rect r, color color) {
+void gpu_fill_rect(rect r, color color){
     switch (chosen_GPU) {
         case VIRTIO_GPU_PCI:
-            vgp_fill_rect(r.point.x, r.point.y, r.size.width, r.size.height, color);
+            vgp_fill_rect(r.point.x,r.point.y,r.size.width,r.size.height,color);
         break;
         case RAMFB:
-            rbf_fill_rect(r.point.x, r.point.y, r.size.width, r.size.height, color);
+            rfb_fill_rect(r.point.x,r.point.y,r.size.width,r.size.height,color);
         break;
         default:
         break;
     }
 }
 
+void gpu_draw_line(point p0, point p1, uint32_t color){
+    switch (chosen_GPU) {
+        case VIRTIO_GPU_PCI:
+            vgp_draw_line(p0.x,p0.y,p1.x,p1.y,color);
+        break;
+        case RAMFB:
+            rfb_draw_line(p0.x,p0.y,p1.x,p1.y,color);
+        break;
+        default:
+        break;
+    }
+}
