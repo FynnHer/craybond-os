@@ -10,7 +10,7 @@
 #define UART0_CR   (UART0_BASE + 0x30)
 
 void enable_uart() {
-  write32(UART0_CR, 0x00000000); // Disable UART
+  write32(UART0_CR, 0x0); // Disable UART
 
   write32(UART0_IBRD, 1); // Set integer baud rate divisor
   write32(UART0_FBRD, 40); // Set fractional baud rate divisor

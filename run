@@ -6,17 +6,14 @@ echo "Building project"
 make 
 echo "Running emulator"
 
-#../qemu/build/qemu-system-aarch64-unsigned \
-qemu-system-aarch64 \
--machine virt \
+#qemu-system-aarch64 \
+../qemu/build/qemu-system-aarch64 \
+-M virt \
 -cpu cortex-a72 \
 -m 512M \
 -kernel kernel.img \
+-device ramfb \
+-display sdl \
 -serial mon:stdio \
--device virtio-gpu-pci \
-#-display sdl \
-#-device rambfb \
-#virtio-gpu-pci,max_outputs=1 \
-#,xres=800,yres=600 \
 # -nographic \
 # -monitor unix:/tmp/qemu-monitor,server,nowait -s -S \

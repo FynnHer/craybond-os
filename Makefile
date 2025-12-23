@@ -6,7 +6,7 @@ OBJCOPY = $(ARCH)-objcopy
 
 
 # Compiler and Linker Flags
-CFLAGS = -nostdlib -ffreestanding -Wall -Wextra -mcpu=cortex-a72 -I.
+CFLAGS = -nostdlib -ffreestanding -Wall -Wextra -mcpu=cortex-a72 -I. -Wno-unused-parameter
 LDFLAGS = -T $(shell ls *.ld)
 
 C_SRC = $(shell find . -name '*.c')

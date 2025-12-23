@@ -1,5 +1,5 @@
 #include "uart.h"
-#include "framebuffer.h"
+#include "gpu/gpu.h"
 #include "pci.h"
 
 
@@ -12,7 +12,7 @@ void kernel_main() {
 
   gpu_init();
 
-  gpu_clear(0x00FF00FF); // ARGB - Blue screen
+  gpu_clear(0x00FF00); // Clear screen to green
 
   uart_puts("Square drawn\n");
 
