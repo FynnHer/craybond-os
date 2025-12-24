@@ -70,7 +70,7 @@ bool string_equals(string a, string b) {
 }
 
 string string_format_args(const char *fmt, const uint64_t *args, uint32_t arg_count) {
-    static char buffer[256];
+    static char buf[256];
     uint32_t len = 0;
     uint32_t arg_index = 0;
 
@@ -88,6 +88,29 @@ string string_format_args(const char *fmt, const uint64_t *args, uint32_t arg_co
             } else if (fmt[i] == 's') {
                 const char *str = (const char *)(uintptr_t)args[arg_index++];
                 for (uint32_t j = 0; str[j] && len < 255; j++) buf[len++] = str[j];
+            } else if (fmt[i] == 'i') {
+                uint64_t val = args[arg_index++];
+                char temp[21];
+                uint32_t temp_len = 0;
+                bool negative = false;
+
+                if ((int)val < 0) {
+                    negative = true;
+                    val = (uint64_t)(-(int)val);
+                }
+
+                do {
+                    temp[temp_len++] = '0' + (val % 10);
+                    val /= 10;
+                } while (val && temp_len < 20);
+
+                if (negative && len < 20) {
+                    temp[temp_len++] = '-';
+                }
+
+                for (int j = temp_len - 1; j >= 0 && len < 255; j--) {
+                    buf[len++] = temp[j];
+                }
             } else {
                 buf[len++] = '%';
                 buf[len++] = fmt[i];
