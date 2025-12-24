@@ -1,4 +1,5 @@
 #include "uart.h"
+#include "console/serial/uart.h"
 #include "mmio.h"
 
 #define UART0_BASE 0x09000000
