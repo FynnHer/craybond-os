@@ -15,17 +15,17 @@ typedef enum {
 
 SupportedGPU chosen_GPU;
 
-void gpu_init(size prefered_screen_size){
-    if (vgp_init(prefered_screen_size.width, prefered_screen_size.height))
+void gpu_init(size preferred_screen_size){
+    if (vgp_init(preferred_screen_size.width,preferred_screen_size.height))
         chosen_GPU = VIRTIO_GPU_PCI;
-    else if (rfb_init(prefered_screen_size.width, prefered_screen_size.height))
+    else if (rfb_init(preferred_screen_size.width,preferred_screen_size.height))
         chosen_GPU = RAMFB;
-    screen_size = prefered_screen_size;
+    screen_size = preferred_screen_size;
     _gpu_ready = true;
-    printf("Selected and initialized GPU driver: %i", chosen_GPU);
+    printf("Selected and initialized GPU %i",chosen_GPU);
 }
 
-bool gpu_ready() {
+bool gpu_ready(){
     return chosen_GPU != NONE && _gpu_ready;
 }
 
@@ -101,23 +101,22 @@ void gpu_draw_line(point p0, point p1, uint32_t color){
         break;
     }
 }
-
-void gpu_draw_char(point p, char c, uint32_t color) {
+void gpu_draw_char(point p, char c, uint32_t color){
     if (!gpu_ready())
         return;
     switch (chosen_GPU) {
         case VIRTIO_GPU_PCI:
-            vgp_draw_char(p.x, p.y, c, color);
+            vgp_draw_char(p.x,p.y,c,color);
         break;
         case RAMFB:
-            rfb_draw_char(p.x, p.y, c, color);
+            rfb_draw_char(p.x,p.y,c,color);
         break;
         default:
         break;
     }
 }
 
-size gpu_get_screen_size() {
+size gpu_get_screen_size(){
     if (!gpu_ready())
         return (size){0,0};
     return screen_size;

@@ -6,7 +6,7 @@
 
 void kernel_main() {
 
-    printf("Kernel initializing ...");
+    printf("Kernel initializing...");
 
     enable_uart();
 
@@ -22,5 +22,5 @@ void kernel_main() {
 
     printf("GPU initialized");
 
-    printf("Kernel initialization complete");
+    printf("Kernel initialization finished");
 }

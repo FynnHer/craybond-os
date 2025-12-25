@@ -3,22 +3,22 @@
 #include "string.h"
 #include "kconsole/kconsole.h"
 
-void puts(const char *s) {
+void puts(const char *s){
     uart_puts(s);
     kconsole_puts(s);
 }
 
-void putc(const char c) {
+void putc(const char c){
     uart_putc(c);
     kconsole_putc(c);
 }
 
-void puthex(uint64_t value) {
+void puthex(uint64_t value){
     uart_puthex(value);
 }
 
-void printf_args(const char *fmt, const uint64_t *args, uint32_t arg_count) {
+void printf_args(const char *fmt, const uint64_t *args, uint32_t arg_count){
     string s = string_format_args(fmt, args, arg_count);
-    uart_puts(s.data);
-    uart_putc('\n');
+    puts(s.data);
+    putc('\n');
 }

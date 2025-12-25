@@ -105,13 +105,13 @@ bool rfb_init(uint32_t w, uint32_t h) {
     struct fw_cfg_file *file = fw_find_file(string_l("etc/ramfb"));
 
     if (file->selector == 0x0){
-        printf("Ramfb not found\n");
+        printf("Ramfb not found");
         return false;
     }
 
     fw_cfg_dma_write(&fb, sizeof(fb), file->selector);
     
-    printf("ramfb configured\n");
+    printf("ramfb configured");
 
     free(file);
 

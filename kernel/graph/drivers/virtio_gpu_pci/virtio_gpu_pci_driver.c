@@ -169,6 +169,7 @@ uint64_t vgp_setup_bars(uint64_t base, uint8_t bar) {
     bar_val = read32(bar_addr);
 
     printf("FINAL BAR value: %h", bar_val);
+
     uint32_t cmd = read32(base + 0x4);
     cmd |= 0x2;
     write32(base + 0x4, cmd);
@@ -193,7 +194,7 @@ void vgp_start() {
     common_cfg->device_feature_select = 0;
     uint32_t features = common_cfg->device_feature;
 
-    printf("Features received: %h", features);
+    printf("Features received %h", features);
 
     common_cfg->driver_feature_select = 0;
     common_cfg->driver_feature = features;
@@ -236,7 +237,7 @@ volatile struct virtio_pci_cap* vgp_get_capabilities(uint64_t address) {
         uint64_t cap_address = address + offset;
         volatile struct virtio_pci_cap* cap = (volatile struct virtio_pci_cap*)(uintptr_t)(cap_address);
 
-        printf("Inspecting@%h = %h (%h + %h) TYPE %h -> %h", cap_address, cap->cap_vndr, cap->bar, cap->offset, cap->cfg_type, cap->cap_next);
+        printf("Inspecting@%h = %h (%h + %h) TYPE %h -> %h",cap_address, cap->cap_vndr, cap->bar, cap->offset, cap->cfg_type, cap->cap_next);
 
         uint64_t target = pci_get_bar(address, 0x10, cap->bar);
         uint64_t val = read32(target) & ~0xF;
@@ -257,7 +258,7 @@ volatile struct virtio_pci_cap* vgp_get_capabilities(uint64_t address) {
                 printf("Found device config %h", val + cap->offset);
                 device_cfg = (volatile uint8_t*)(uintptr_t)(val + cap->offset);
             } else if (cap->cfg_type == VIRTIO_PCI_CAP_ISR_CFG) {
-                printf("Found isr config %h", val + cap->offset);
+                printf("Found ISR config %h", val + cap->offset);
                 isr_cfg = (volatile uint8_t*)(uintptr_t)(val + cap->offset);
             }
         }
@@ -363,7 +364,7 @@ void vgp_create_2d_resource() {
     volatile struct virtio_gpu_ctrl_hdr* resp = (volatile void*)(uintptr_t)(VIRTQUEUE_RESP);
 
     printf("Response type: %h flags: %h", resp->type, resp->flags);
-
+    
     if (resp->type == 0x1100) {
         printf("RESOURCE_CREATE_2D OK");
     } else {
@@ -490,15 +491,18 @@ void vgp_transfer_to_host() {
     volatile struct virtio_gpu_ctrl_hdr* resp = (volatile void*)(uintptr_t)(VIRTQUEUE_RESP);
 
     printf("Response type: %h flags: %h", resp->type, resp->flags);
-
+    
     if (resp->type == 0x1100) {
-        printf("TRANSFER OK");
+        printf("TRANSFER_TO_HOST OK");
     } else {
-        printf("TRANSFER ERROR: %h", resp->type);
+        printf("TRANSFER_TO_HOST ERROR: %h", resp->type);
     }
 }
 
 void vgp_flush() {
+
+    vgp_transfer_to_host();
+
     volatile struct {
         uint32_t type;
         uint32_t flags;
@@ -541,15 +545,15 @@ void vgp_clear(uint32_t color) {
     vgp_flush();
 }
 
-void vgp_draw_pixel(uint32_t x, uint32_t y, uint32_t color) {
+void vgp_draw_pixel(uint32_t x, uint32_t y, uint32_t color){
 
 }
 
-void vgp_fill_rect(uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint32_t color) {
+void vgp_fill_rect(uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint32_t color){
 
 }
 
-void vgp_draw_line(uint32_t x0, uint32_t y0, uint32_t x1, uint32_t y1, uint32_t color) {
+void vgp_draw_line(uint32_t x0, uint32_t y0, uint32_t x1, uint32_t y1, uint32_t color){
 
 }
 
@@ -565,7 +569,7 @@ bool vgp_init(uint32_t width, uint32_t height) {
     default_height = height;
 
     if (address > 0) {
-        printf("VirtIO GPU device found at %h", address);
+        printf("VGP GPU detected at %h",address);
 
         printf("Initializing GPU...");
 
