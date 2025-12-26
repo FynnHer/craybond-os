@@ -562,8 +562,7 @@ void vgp_draw_char(uint32_t x, uint32_t y, char c, uint32_t color) {
 }
 
 bool vgp_init(uint32_t width, uint32_t height) {
-    uint64_t mmio_base;
-    uint64_t address = find_pci_device(VENDOR_ID, DEVICE_ID_BASE + GPU_DEVICE_ID, &mmio_base);
+    uint64_t address = find_pci_device(VENDOR_ID, DEVICE_ID_BASE + GPU_DEVICE_ID);
 
     default_width = width;
     default_height = height;

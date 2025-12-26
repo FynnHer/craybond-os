@@ -12,7 +12,7 @@ SECTIONS {
     . = . + 0x10000; /* 64KB Stack */
     stack_top = .;
 
-    . = ALIGN(4096)
+    . = ALIGN(4096);
     heap_bottom = .;
     . = . + 0x1000000; /* 16MB heap */
     heap_limit = .;

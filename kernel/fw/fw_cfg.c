@@ -43,7 +43,7 @@ void fw_cfg_dma_write(void* dest, uint32_t size, uint32_t ctrl){
     fw_cfg_dma_read(dest, size, (ctrl << 16) | FW_CFG_DMA_SELECT | FW_CFG_DMA_WRITE);
 }
 
-bool fw_cfg_file* fw_find_file(string search, struct fw_cfg_file *file) {
+bool fw_find_file(string search, struct fw_cfg_file *file) {
 
     uint32_t count;
     fw_cfg_dma_read(&count, sizeof(count), (FW_LIST_DIRECTORY << 16) | FW_CFG_DMA_SELECT | FW_CFG_DMA_READ);

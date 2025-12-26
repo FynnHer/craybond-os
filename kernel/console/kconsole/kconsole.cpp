@@ -23,7 +23,7 @@ void KernelConsole::resize() {
     size screen = gpu_get_screen_size();
     columns = screen.width / char_width;
     rows = screen.height / char_height;
-#warning Buffer is currently gorwing from temporary memory, since we dont have proper memory management yet. if the system grows more complex and we're not careful we could trigger an overflow
+#warning Buffer is currently gorwing from temporary memory, since we dont have proper memory management yet. if the system grows more complex and were not careful we could trigger an overflow
     buffer = (char**)talloc(rows * sizeof(char*));
     for (unsigned int i = 0; i < rows; i++) {
         buffer[i] = (char*)talloc(columns * sizeof(char));

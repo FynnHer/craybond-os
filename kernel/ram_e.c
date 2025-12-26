@@ -67,7 +67,7 @@ uint64_t palloc(uint64_t size) {
     if (next_free_perm_memory > heap_limit)
         panic("Permanent allocator overflow");
     uint64_t result = next_free_perm_memory;
-    next_free_perm_memory += (size + 0xFFF) & ~0xFFF
+    next_free_perm_memory += (size + 0xFFF) & ~0xFFF;
     return result;
 }
 
