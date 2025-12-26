@@ -2,6 +2,7 @@
 #include "console/serial/uart.h"
 #include "ram_e.h"
 #include "console/kio.h"
+#include "gic.h"
 
 #define MAIR_DEVICE_nGnRnE 0b00000000 // Device-nGnRnE is 0b00000000 | nGnRnE is "non-Gathering, non-Reordering, no Early write acknowledgment"
 #define MAIR_NORMAL_NOCACHE 0b01000100 // Normal memory, Non-cacheable is 0b01000100
@@ -96,6 +97,9 @@ void mmu_init() {
 
     for (uint64_t addr = UART0_BASE; addr < UART0_BASE + 0x1000; addr += 0x200000)
         mmu_map_4kb(addr, addr, MAIR_IDX_DEVICE); // Map UART as device memory
+
+    for (uint64_t addr = GICD_BASE; addr < GICD_BASE + 0x12000; addr += 0x1000)
+        mmu_map_4kb(addr, addr, MAIR_IDX_DEVICE); // Map GIC as device memory
 
     uint64_t mair = (MAIR_DEVICE_nGnRnE << (MAIR_IDX_DEVICE * 8)) | (MAIR_NORMAL_NOCACHE << (MAIR_IDX_NORMAL * 8));
     asm volatile ("msr mair_el1, %0" :: "r"(mair)); // Set MAIR_EL1 register

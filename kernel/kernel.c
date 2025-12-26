@@ -7,12 +7,11 @@
 #include "mmu.h"
 #include "exception_handler.h"
 #include "ram_e.h"
+#include "gic.h"
 
 void kernel_main() {
 
     printf("Kernel initializing...");
-
-   
 
     enable_uart();
 
@@ -24,7 +23,7 @@ void kernel_main() {
 
     gpu_init(screen_size);
 
-
+    string s = string_format("Hello. This is a test panic for %h", 0x0);
 
     printf("GPU initialized");
 
@@ -34,10 +33,20 @@ void kernel_main() {
 
     printf("Exception vectors set");
 
+    gic_init();
+
+    printf("Interrupts init");
+
+    timer_init(5);
+
+    printf("Test timer done");
+
+    enable_interrupt();
+
+    printf("Interrupts enabled");
+
     mmu_init();
     printf("MMU Mapped");
-
-    string s = string_format("Hello. This is a test panic for %h", 0x0);
 
     printf("Kernel initialized successfully!");
 
