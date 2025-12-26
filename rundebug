@@ -1,0 +1,12 @@
+#!/bin/bash
+
+DIR="$(pwd)"
+
+# ./run run in the background
+( cd "$DIR" && ./run ) &
+
+# short timeout
+sleep 0.5
+
+# ./debug run in the background
+( cd "$DIR" && ./debug ) &

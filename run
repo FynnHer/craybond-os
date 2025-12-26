@@ -11,9 +11,10 @@ echo "Running emulator"
 -M virt \
 -cpu cortex-a72 \
 -m 512M \
--kernel kernel.img \
+-kernel kernel.elf \
 -device ramfb \
 -display sdl \
 -serial mon:stdio \
-# -nographic \
 # -monitor unix:/tmp/qemu-monitor,server,nowait -s -S \
+# -nographic \
+

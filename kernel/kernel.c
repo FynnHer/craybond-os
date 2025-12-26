@@ -4,6 +4,7 @@
 #include "pci.h"
 #include "string.h"
 #include "console/kconsole/kconsole.h"
+#include "mmu.h"
 
 void kernel_main() {
 
@@ -26,6 +27,7 @@ void kernel_main() {
     //kconsole_clear();
 
     printf("Kernel initialization finished");
+    mmu_init();
 
     printf("Now we're writing a really long string, becuase why not? Let's see how the console handles it. This should wrap around multiple lines and still be perfectly readable. If everything works as expected, we should see this entire message displayed correctly on the screen without any issues. Let's add even more text to make sure we really test the limits of our console implementation. Here we go!");
 }
