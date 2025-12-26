@@ -43,10 +43,10 @@ uint64_t read(uint64_t addr) {
 }
 
 void panic() {
-    printf("Why are you panicking? Just don't do it. Is it that hard?");
+    printf(">>> We have a kernel panic!");
 }
 
-#define temp_start &heap_bottom + 0x1000000
+#define temp_start &heap_bottom + 0x5000000
 
 extern uint64_t heap_bottom;
 extern uint64_t heap_limit;
@@ -56,7 +56,7 @@ uint64_t next_free_perm_memory = (uint64_t)temp_start;
 uint64_t talloc(uint64_t size) {
     next_free_temp_memory = (next_free_temp_memory + 0xFFF) & ~0xFFF;
     if (next_free_temp_memory + size > next_free_perm_memory)
-        panic();
+        printf(">>> Temporary allocator overflow! <<<");
     uint64_t result = next_free_temp_memory;
     next_free_temp_memory += (size + 0xFFF) & ~0xFFF;
     return result;
@@ -64,8 +64,8 @@ uint64_t talloc(uint64_t size) {
 
 uint64_t palloc(uint64_t size) {
     next_free_perm_memory = (next_free_perm_memory + 0xFFF) & ~0xFFF;
-    if (next_free_perm_memory > heap_limit)
-        panic("Permanent allocator overflow");
+    if (next_free_perm_memory > (uint64_t)&heap_limit)
+        printf(">>> Permanent allocator overflow. Size: %h. Current ptr: %h. Limit: %h", size, next_free_perm_memory, (uint64_t)&heap_limit);
     uint64_t result = next_free_perm_memory;
     next_free_perm_memory += (size + 0xFFF) & ~0xFFF;
     return result;
