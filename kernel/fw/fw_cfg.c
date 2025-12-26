@@ -43,15 +43,17 @@ void fw_cfg_dma_operation(void* dest, uint32_t size, uint32_t ctrl) {
     
 }
 
-void fw_cfg_dma_read(void* dest, uint32_t size, uint32_t ctrl) {
+void fw_cfg_dma_read(void* dest, uint32_t size, uint32_t ctrl){
     if (!fw_cfg_check())
         return;
+
     fw_cfg_dma_operation(dest, size, (ctrl << 16) | FW_CFG_DMA_SELECT | FW_CFG_DMA_READ);
 }
 
 void fw_cfg_dma_write(void* dest, uint32_t size, uint32_t ctrl){
     if (!fw_cfg_check())
         return;
+
     fw_cfg_dma_operation(dest, size, (ctrl << 16) | FW_CFG_DMA_SELECT | FW_CFG_DMA_WRITE);
 }
 

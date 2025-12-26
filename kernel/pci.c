@@ -26,10 +26,10 @@ struct acpi_rsdp_t {
     uint64_t xsdt_address;
     uint8_t extended_checksum;
     uint8_t reserved[3];
-} __attribute__((packed));
+}__attribute__((packed));
 
 struct acpi_xsdt_t {
-    char signature[4];
+    char signature[4]; // "XSDT"
     uint32_t length;
     uint8_t revision;
     uint8_t checksum;
@@ -38,11 +38,11 @@ struct acpi_xsdt_t {
     uint32_t oem_revision;
     uint32_t creator_id;
     uint32_t creator_revision;
-    uint64_t entries[]; // Array of the table pointers
+    uint64_t entries[]; // Array of table pointers
 }__attribute__((packed));
 
 typedef struct acpi_mcfg_t {
-    char signature[4];
+    char signature[4]; // "MCFG"
     uint32_t length;
     uint8_t revision;
     uint8_t checksum;
@@ -53,13 +53,13 @@ typedef struct acpi_mcfg_t {
     uint32_t creator_revision;
     uint64_t reserved;
     struct {
-        uint64_t base_address;
+        uint64_t base_address; // <<<< This is what you want
         uint16_t pci_segment_group_number;
         uint8_t start_bus_number;
         uint8_t end_bus_number;
-        uint32_t reserved;
+        uint32_t reserved2;
     } __attribute__((packed)) allocations[];
-}__attribute__((packed));
+} __attribute__((packed));
 
 #define RSDP_SEARCH_START 0x000E0000
 #define RSDP_SEARCH_END   0x00100000
@@ -69,8 +69,9 @@ void* find_rsdp() {
         const char* sig = (const char*)(uintptr_t)addr;
         if (sig[0] == 'R' && sig[1] == 'S' && sig[2] == 'D' && sig[3] == ' ' &&
             sig[4] == 'P' && sig[5] == 'T' && sig[6] == 'R' && sig[7] == ' ') {
+            
             struct acpi_rsdp_t* candidate = (struct acpi_rsdp_t*)(uintptr_t)addr;
-
+            
             uint8_t sum = 0;
             uint8_t* p = (uint8_t*)candidate;
             for (int i = 0; i < 20; i++) sum += p[i];
@@ -89,8 +90,8 @@ void* find_rsdp() {
     return 0x0;
 }
 
-void find_pci() {
-    pci_base = 0x4010000000; // Default PCI ECAM base
+void find_pci(){
+    pci_base = 0x4010000000;
     return;
     struct fw_cfg_file file;
     if (!fw_find_file(string_l("etc/acpi/rsdp"), &file))
@@ -99,16 +100,16 @@ void find_pci() {
     printf("rsdp file found");
 
     struct acpi_rsdp_t data;
-
+    
     fw_cfg_dma_read(&data, sizeof(struct acpi_rsdp_t), file.selector);
 
-    printf("rsdp data read with address %h (%h = %h)", data.xsdt_address, data.length, sizeof(struct acpi_xsdt_t));
+    printf("rsdp data read with address %h (%h = %h)", data.xsdt_address, data.length,sizeof(struct acpi_rsdp_t));
 
     string a = string_ca_max(data.signature, 8);
-    if (!string_equals(string_l("RSP PTR "), a)) {
+    if (!string_equals(string_l("RSD PTR "), a)){
         printf("Signature doesn't match %s", (uint64_t)a.data);
-    } else
-        printf("Signature matches %s", (uint64_t)a.data);
+    } else 
+        printf("Signature match %s", (uint64_t)a.data);
 
     uint8_t sum = 0;
     uint8_t* bytes = (uint8_t*)&data;
@@ -130,12 +131,12 @@ void find_pci() {
     uint64_t xsdt_addr = (bkdata->revision >= 2) ? bkdata->xsdt_address : (uint64_t)bkdata->rsdt_address;
 
     printf("rsdp pointer %h", xsdt_addr);
-
+    
     struct acpi_xsdt_t xsdt_header;
     dma_read(&xsdt_header, sizeof(xsdt_header), xsdt_addr);
 
     printf("xsdt header found");
-
+    
     uint32_t entry_count = (xsdt_header.length - sizeof(xsdt_header)) / sizeof(uint64_t);
 
     printf("xsdt %c entries", xsdt_header.signature[0]);
@@ -152,7 +153,7 @@ void find_pci() {
         if (sig[0] == 'M' && sig[1] == 'C' && sig[2] == 'F' && sig[3] == 'G') {
             struct acpi_mcfg_t mcfg;
             dma_read(&mcfg, sizeof(mcfg), entry_addr);
-        
+
             printf("Found PCI controller base address: %h", mcfg.allocations[0].base_address);
             return;
         }
@@ -160,7 +161,6 @@ void find_pci() {
 
     printf("MCFG not found");
 }
-
 
 uint64_t pci_make_addr(uint32_t bus, uint32_t slot, uint32_t func, uint32_t offset){
     return pci_base
@@ -173,14 +173,16 @@ uint64_t pci_make_addr(uint32_t bus, uint32_t slot, uint32_t func, uint32_t offs
 uint64_t pci_get_bar_address(uint64_t base, uint8_t offset, uint8_t index){
     if (NINIT)
         find_pci();
+
     return base + offset + (index * 4);
 }
 
 void debug_read_bar(uint64_t base, uint8_t offset, uint8_t index){
     uint64_t addr = pci_get_bar_address(base, offset, index);
     uint64_t val = read32(addr);
-    printf("Reading@%h (%i) content: %h", addr, index, val);
+    printf("Reading@%h (%i) content: ", addr, index, val);
 }
+
 
 uint64_t find_pci_device(uint32_t vendor_id, uint32_t device_id) {
 
@@ -209,6 +211,6 @@ void dump_pci_config(uint64_t base) {
     printf("Dumping PCI Configuration Space:");
     for (uint32_t offset = 0; offset < 0x40; offset += 4) {
         uint64_t val = read(base + offset);
-        printf("Offset %h: %h", offset, val);
+        printf("Offset %h: %h",offset, val);
     }
 }

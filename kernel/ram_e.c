@@ -1,5 +1,6 @@
 #include "ram_e.h"
 #include "types.h"
+#include "exception_handler.h"
 #include "console/kio.h"
 
 uint8_t read8(uintptr_t addr) {
@@ -42,11 +43,7 @@ uint64_t read(uint64_t addr) {
     return read64(addr);
 }
 
-void panic() {
-    printf(">>> We have a kernel panic!");
-}
-
-#define temp_start &heap_bottom + 0x5000000
+#define temp_start &heap_bottom + 0x500000
 
 extern uint64_t kernel_start;
 extern uint64_t heap_bottom;
@@ -57,7 +54,7 @@ uint64_t next_free_perm_memory = (uint64_t)temp_start;
 uint64_t talloc(uint64_t size) {
     next_free_temp_memory = (next_free_temp_memory + 0xFFF) & ~0xFFF;
     if (next_free_temp_memory + size > next_free_perm_memory)
-        printf(">>> Temporary allocator overflow! <<<");
+        panic(">>> Temporary allocator overflow");
     uint64_t result = next_free_temp_memory;
     next_free_temp_memory += (size + 0xFFF) & ~0xFFF;
     return result;
@@ -66,20 +63,20 @@ uint64_t talloc(uint64_t size) {
 uint64_t palloc(uint64_t size) {
     next_free_perm_memory = (next_free_perm_memory + 0xFFF) & ~0xFFF;
     if (next_free_perm_memory > (uint64_t)&heap_limit)
-        printf(">>> Permanent allocator overflow. Size: %h. Current ptr: %h. Limit: %h", size, next_free_perm_memory, (uint64_t)&heap_limit);
+        panic(">>> Permanent allocator overflow");
     uint64_t result = next_free_perm_memory;
     next_free_perm_memory += (size + 0xFFF) & ~0xFFF;
     return result;
 }
 
-void free_temp() {
+void free_temp(){
     next_free_temp_memory = (uint64_t)temp_start;
 }
 
-uint64_t mem_get_kmem_start() {
+uint64_t mem_get_kmem_start(){
     return (uint64_t)&kernel_start;
 }
 
-uint64_t mem_get_kmem_end() {
+uint64_t mem_get_kmem_end(){
     return (uint64_t)&heap_limit;
 }
