@@ -7,13 +7,18 @@
 #include "mmu.h"
 #include "exception_handler.h"
 #include "ram_e.h"
+#include "dtb.h"
 #include "gic.h"
 
 void kernel_main() {
 
-    printf("Kernel initializing...");
-
     enable_uart();
+
+    printf("Initializing kernel...");
+
+    printf("Reading device tree %h", get_total_ram());
+
+    string s = string_format("Hello. This is a test panic for %h", 0x0);
 
     printf("UART output enabled");
 
@@ -22,8 +27,6 @@ void kernel_main() {
     printf("Preparing for draw");
 
     gpu_init(screen_size);
-
-    string s = string_format("Hello. This is a test panic for %h", 0x0);
 
     printf("GPU initialized");
 
@@ -50,5 +53,7 @@ void kernel_main() {
 
     printf("Kernel initialized successfully!");
 
-    printf("Now we're writing a really long string, becuase why not? Let's see how the console handles it. This should wrap around multiple lines and still be perfectly readable. If everything works as expected, we should see this entire message displayed correctly on the screen without any issues. Let's add even more text to make sure we really test the limits of our console implementation. Here we go!");
+    printf("Preparing user memory...");
+
+    printf("There's %h memory for user processes", get_total_user_ram());
 }
