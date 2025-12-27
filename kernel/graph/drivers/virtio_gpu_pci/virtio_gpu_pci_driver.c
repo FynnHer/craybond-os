@@ -1,3 +1,9 @@
+/*
+kernel/graph/drivers/virtio_gpu_pci/virtio_gpu_pci_driver.c
+This file implements a VirtIO GPU PCI driver. It initializes the VirtIO GPU device,
+sets up the necessary data structures, and provides functions to interact with the GPU,
+including retrieving display information, creating resources, and setting up scanouts.
+*/
 #include "console/kio.h"
 #include "ram_e.h"
 #include "pci.h"
@@ -36,6 +42,10 @@
 #define framebuffer_size display_width * display_height * (FRAMEBUFFER_BPP/8)
 
 struct virtio_pci_cap {
+    /*
+    This structure represents a VirtIO PCI capability.
+    It contains fields for the capability type, location, and size.
+    */
     uint8_t cap_vndr;
     uint8_t cap_next;
     uint8_t cap_len;
@@ -48,6 +58,10 @@ struct virtio_pci_cap {
 };
 
 struct virtio_pci_common_cfg {
+    /*
+    This structure represents the VirtIO PCI common configuration space.
+    It contains fields for device status, features, queue configuration, and other control information.
+    */
     uint32_t device_feature_select;
     uint32_t device_feature;
     uint32_t driver_feature_select;
@@ -69,6 +83,10 @@ struct virtio_pci_common_cfg {
 } __attribute__((packed));
 
 struct virtio_gpu_ctrl_hdr {
+    /*
+    This structure represents the header for VirtIO GPU control commands.
+    It contains fields for the command type, flags, fence ID, context ID, and resource ID.
+    */
     uint32_t type;
     uint32_t flags;
     uint64_t fence_id;
@@ -78,6 +96,10 @@ struct virtio_gpu_ctrl_hdr {
 };
 
 struct virtio_rect {
+    /*
+    This structure represents a rectangle in the VirtIO GPU.
+    It contains fields for the x and y coordinates, width, and height.
+    */
     uint32_t x;
     uint32_t y;
     uint32_t width;
@@ -85,6 +107,10 @@ struct virtio_rect {
 };
 
 struct virtio_gpu_resp_display_info {
+    /*
+    This structure represents the response for the VirtIO GPU display information command.
+    It contains a control header and an array of display modes for each scanout.
+    */
     struct virtio_gpu_ctrl_hdr hdr;
     struct virtio_gpu_display_one {
         uint32_t enabled;
@@ -97,6 +123,10 @@ struct virtio_gpu_resp_display_info {
 };
 
 struct virtq_desc {
+    /*
+    This structure represents a VirtIO queue descriptor.
+    It contains fields for the address, length, flags, and next descriptor index.
+    */
     uint64_t addr;
     uint32_t len;
     uint16_t flags;
@@ -104,17 +134,29 @@ struct virtq_desc {
 } __attribute__((packed));
 
 struct virtq_avail {
+    /*
+    This structure represents the available ring of a VirtIO queue.
+    It contains fields for flags, index, and an array of ring entries.
+    */
     uint16_t flags;
     uint16_t idx;
     uint16_t ring[128];
 } __attribute__((packed));
 
 struct virtq_used_elem {
+    /*
+    This structure represents an element in the used ring of a VirtIO queue.
+    It contains fields for the descriptor ID and length of the used buffer.
+    */
     uint32_t id;
     uint32_t len;
 } __attribute__((packed));
 
 struct virtq_used {
+    /*
+    This structure represents the used ring of a VirtIO queue.
+    It contains fields for flags, index, and an array of used elements.
+    */
     uint16_t flags;
     uint16_t idx;
     struct virtq_used_elem ring[128];
@@ -149,6 +191,12 @@ static uint32_t default_height;
 #define FRAMEBUFFER_BPP 32
 
 uint64_t vgp_setup_bars(uint64_t base, uint8_t bar) {
+    /*
+    This function sets up the Base Address Register (BAR) for the VirtIO GPU device.
+    It probes the BAR size, allocates a configuration base address, and enables memory access.
+    It returns the final BAR address for the device.
+    Example usage: uint64_t bar_addr = vgp_setup_bars(device_base, 0);
+    */
     uint64_t bar_addr = pci_get_bar_address(base, 0x10, bar);
     printf("Setting up GPU BAR@%h FROM BAR %i", bar_addr, bar);
 
@@ -178,6 +226,13 @@ uint64_t vgp_setup_bars(uint64_t base, uint8_t bar) {
 }
 
 void vgp_start() {
+    /*
+    This function starts the VirtIO GPU device by performing the necessary initialization steps.
+    It resets the device, acknowledges it, negotiates features, sets up the VirtIO queues,
+    and marks the device as ready for operation.
+    Example usage: vgp_start() would initialize the VirtIO GPU device for use.
+    VGP stands for VirtIO GPU.
+    */
     printf("Starting VirtIO GPU initialization");
 
     common_cfg->device_status = 0;
@@ -231,6 +286,12 @@ void vgp_start() {
 }
 
 volatile struct virtio_pci_cap* vgp_get_capabilities(uint64_t address) {
+    /*
+    This function retrieves and processes the VirtIO PCI capabilities from the device's PCI configuration space.
+    It iterates through the capabilities linked list, identifies relevant VirtIO capabilities,
+    and sets up pointers to the common configuration, notification, device, and ISR configuration spaces.
+    Example usage: vgp_get_capabilities(device_base) would initialize the capability pointers for the device.
+    */
     uint64_t offset = read32(address + 0x34);
 
     while (offset != 0x0) {
@@ -272,6 +333,12 @@ volatile struct virtio_pci_cap* vgp_get_capabilities(uint64_t address) {
 // Screen render functions
 
 void vgp_send_command(uint64_t cmd_addr, uint32_t cmd_size, uint64_t resp_addr, uint32_t resp_size, uint64_t notify_base, uint32_t notify_multiplier, uint8_t flags) {
+    /*
+    This function sends a command to the VirtIO GPU device using the VirtIO queue.
+    It sets up the descriptor table, available ring, and notifies the device of the new command.
+    It then waits for the device to process the command and provide a response.
+    Example usage: vgp_send_command(cmd_addr, cmd_size, resp_addr, resp_size, notify_base, notify_multiplier, flags);
+    */
 
     volatile struct virtq_desc* desc = (volatile struct virtq_desc*)(uintptr_t)(common_cfg->queue_desc);
     volatile struct virtq_avail* avail = (volatile struct virtq_avail*)(uintptr_t)(common_cfg->queue_driver);
@@ -298,6 +365,12 @@ void vgp_send_command(uint64_t cmd_addr, uint32_t cmd_size, uint64_t resp_addr, 
 }
 
 bool vgp_get_display_info(){
+    /*
+    This function retrieves the display information from the VirtIO GPU device.
+    It sends a command to get the display info and processes the response to find an enabled scanout.
+    If a valid display is found, it updates the display width and height accordingly.
+    Example usage: bool success = vgp_get_display_info(); would return true if a valid display is found.
+    */
     volatile struct virtio_gpu_ctrl_hdr* cmd = (volatile struct virtio_gpu_ctrl_hdr*)(uintptr_t)(VIRTQUEUE_CMD);
     cmd->type = VIRTIO_GPU_CMD_GET_DISPLAY_INFO;
     cmd->flags = 0;
@@ -336,6 +409,12 @@ bool vgp_get_display_info(){
 }
 
 void vgp_create_2d_resource() {
+    /*
+    This function creates a 2D resource on the VirtIO GPU device.
+    It sends a command to create a 2D resource with the specified display width and height.
+    It processes the response to confirm whether the resource creation was successful.
+    Example usage: vgp_create_2d_resource() would create a 2D resource for the current display dimensions.
+    */
     volatile struct {
         struct virtio_gpu_ctrl_hdr hdr;
         uint32_t resource_id;
@@ -373,6 +452,12 @@ void vgp_create_2d_resource() {
 }
 
 void vgp_attach_backing() {
+    /*
+    This function attaches backing memory to the previously created 2D resource on the VirtIO GPU device.
+    It sends a command to attach the framebuffer memory to the resource and processes the response
+    to confirm whether the operation was successful.
+    Example usage: vgp_attach_backing() would attach the framebuffer memory to the GPU resource.
+    */
     volatile uint8_t* ptr = (volatile uint8_t*)(uintptr_t)VIRTQUEUE_CMD;
 
     volatile struct {
@@ -420,6 +505,12 @@ void vgp_attach_backing() {
 }
 
 void vgp_set_scanout() {
+    /*
+    This function sets the scanout for the VirtIO GPU device.
+    It sends a command to set the scanout with the specified resource ID and display dimensions.
+    It processes the response to confirm whether the operation was successful.
+    Example usage: vgp_set_scanout() would set the scanout for the current display dimensions.
+    */
     volatile struct {
         struct virtio_gpu_ctrl_hdr hdr;
         struct virtio_rect r;
@@ -462,6 +553,12 @@ void vgp_set_scanout() {
 }
 
 void vgp_transfer_to_host() {
+    /*
+    This function transfers the framebuffer data to the host VirtIO GPU device.
+    It sends a command to transfer the 2D resource to the host and processes the response
+    to confirm whether the operation was successful.
+    Example usage: vgp_transfer_to_host() would transfer the framebuffer data to the GPU.
+    */
     volatile struct {
         uint32_t type;
         uint32_t flags;
@@ -500,6 +597,12 @@ void vgp_transfer_to_host() {
 }
 
 void vgp_flush() {
+    /*
+    This function flushes the 2D resource on the VirtIO GPU device.
+    It sends a command to flush the resource and processes the response to confirm
+    whether the operation was successful.
+    Example usage: vgp_flush() would flush the current 2D resource to ensure it is displayed.
+    */
 
     vgp_transfer_to_host();
 
@@ -533,6 +636,12 @@ void vgp_flush() {
 }
 
 void vgp_clear(uint32_t color) {
+    /*
+    This function clears the screen by filling the entire framebuffer with a specified color.
+    It iterates through each pixel in the framebuffer and sets its value to the provided color.
+    After clearing the screen, it transfers the updated framebuffer to the host and flushes the changes.
+    Example usage: vgp_clear(0x000000FF) would clear the screen to blue.
+    */
 
     printf("Clear screen");
 
@@ -562,6 +671,13 @@ void vgp_draw_char(uint32_t x, uint32_t y, char c, uint32_t color) {
 }
 
 bool vgp_init(uint32_t width, uint32_t height) {
+    /*
+    This function initializes the VirtIO GPU device.
+    It detects the device on the PCI bus, retrieves its capabilities, and sets up the necessary resources for rendering.
+    It also retrieves display information and creates a 2D resource for the framebuffer.
+    If successful, it returns true; otherwise, it returns false.
+    Example usage: bool success = vgp_init(1024, 768); would initialize the GPU for a 1024x768 display.
+    */
     uint64_t address = find_pci_device(VENDOR_ID, DEVICE_ID_BASE + GPU_DEVICE_ID);
 
     default_width = width;

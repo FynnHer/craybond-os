@@ -1,3 +1,10 @@
+/* 
+kernel/gic.c
+This file implements the Generic Interrupt Controller (GIC) initialization and interrupt handling.
+It sets up the GIC Distributor and CPU Interface, configures the timer interrupt,
+and provides functions to enable interrupts and handle IRQ exceptions.
+IRQ stands for Interrupt Request.
+*/
 #include "gic.h"
 #include "console/kio.h"
 #include "ram_e.h"

@@ -1,15 +1,37 @@
+/*
+kernel/exception_handler.c
+This file implements basic exception handling for the kernel. It sets up exception vectors,
+handles synchronous exceptions, FIQs, and errors by reading system registers and outputting relevant information.
+It also provides panic functions to halt the system in case of critical errors.
+FIQ stands for Fast Interrupt Request.
+*/
 #include "exception_handler.h"
 #include "console/serial/uart.h"
 #include "string.h"
 #include "console/kio.h"
 
 void set_exception_vectors(){
+    /*
+    This function sets the exception vector base address by writing to the VBAR_EL1 system register.
+    The exception vectors are defined in the exception_vectors array.
+    VBAR_EL1 - Vector Base Address Register for Exception Level 1
+    Vectors are used to handle different types of exceptions and interrupts.
+    */
     extern char exception_vectors[];
     printf("Exception vectors setup at %h", (uint64_t)&exception_vectors);
     asm volatile ("msr vbar_el1, %0" :: "r"(exception_vectors));
 }
 
 void handle_exception(const char* type) {
+    /*
+    This function handles exceptions by reading relevant system registers
+    such as ESR_EL1 (Exception Syndrome Register), ELR_EL1 (Exception Link Register),
+    and FAR_EL1 (Fault Address Register). It then formats this information into a string
+    and triggers a kernel panic with the details.
+    ESR_EL1 - Provides information about the cause of the exception.
+    ELR_EL1 - Contains the address of the instruction that caused the exception.
+    FAR_EL1 - Contains the address that caused a data abort exception.
+    */
     uint64_t esr, elr, far;
     asm volatile ("mrs %0, esr_el1" : "=r"(esr));
     asm volatile ("mrs %0, elr_el1" : "=r"(elr));

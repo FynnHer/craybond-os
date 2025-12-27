@@ -1,3 +1,11 @@
+/*
+kernel/mmu.c
+This file implements basic MMU (Memory Management Unit) functionality for the kernel.
+It provides functions to map virtual addresses to physical addresses using
+page tables, allowing for memory protection and management.
+Level 1, 2, and 3 page tables are used to create mappings for 2MB and 4KB pages.
+Example attributes include device memory and normal memory.
+*/
 #include "mmu.h"
 #include "console/serial/uart.h"
 #include "ram_e.h"
@@ -86,6 +94,14 @@ void mmu_map_4kb(uint64_t va, uint64_t pa, uint64_t attr_index) { // Map a 4KB p
 }
 
 void mmu_init() {
+    /*
+    This function initializes the MMU by setting up the page tables and enabling the MMU.
+    It maps the kernel memory region, UART, and GIC as device memory.
+    It configures the MAIR and TCR registers and enables the MMU in SCTLR_EL1.
+    MAIR - Memory Attribute Indirection Register
+    TCR - Translation Control Register
+    SCTLR - System Control Register
+    */
     for (int i = 0; i < PAGE_TABLE_ENTRIES; i ++) {
         page_table_l1[i] = 0;
     }

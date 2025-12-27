@@ -1,3 +1,9 @@
+/*
+kernel/types.h
+This file defines basic types used throughout the kernel, including fixed-width
+integer types and boolean type. They are needed for consistent data representation
+across different platforms and architectures.
+*/
 #ifdef __cplusplus
 extern "C" {
 #endif

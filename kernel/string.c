@@ -1,7 +1,17 @@
+/*
+kernel/string.c
+This file provides basic string manipulation functions for the kernel. It includes
+functions to create strings from literals, characters, and hexadecimal values.
+It also provides string comparison and formatted string creation capabilities.
+*/
 #include "string.h"
 #include "ram_e.h"
 
 static uint32_t compute_length(const char *s, uint32_t max_length) {
+    /*
+    This function computes the length of a null-terminated string up to a maximum length.
+    If max_length is 0, it computes the full length until the null terminator.
+    */
     uint32_t len = 0;
     while ((max_length == 0 || len < max_length) && s[len] != '\0') {
         len++;
@@ -10,6 +20,11 @@ static uint32_t compute_length(const char *s, uint32_t max_length) {
 }
 
 string string_l(const char *literal) {
+    /*
+    This function creates a string structure from a string literal.
+    It calculates the length of the literal and returns a string object.
+    A literal is a string defined directly in the code, e.g., "Hello, World!".
+    */
     uint32_t len = compute_length(literal, 0);
     string str;
     str.data = (char *)literal;
@@ -18,6 +33,11 @@ string string_l(const char *literal) {
 }
 
 string string_ca_max(const char *array, uint32_t max_length) {
+    /*
+    This function creates a string structure from a character array with a specified maximum length.
+    It computes the length of the array up to max_length and returns a string object.
+    Example usage: string_ca_max("Hello, World!", 5) would create a string with data "Hello" and length 5.
+    */
     uint32_t len = compute_length(array, max_length);
 
     string str;
@@ -27,6 +47,12 @@ string string_ca_max(const char *array, uint32_t max_length) {
 }
 
 string string_c(const char c) {
+    /*
+    This function creates a string structure from a single character.
+    It allocates memory for a 2-character array (the character and a null terminator)
+    and returns a string object.
+    Example usage: string_c('A') would create a string with data "A" and length 1.
+    */
     char *buf = (char*)talloc(2);
     buf[0] = c;
     buf[1] = 0;
@@ -34,6 +60,11 @@ string string_c(const char c) {
 }
 
 string string_from_hex(uint64_t value) {
+    /*
+    This function creates a string representation of a hexadecimal value.
+    It converts the given uint64_t value into a hexadecimal string prefixed with "0x".
+    Example usage: string_from_hex(255) would create a string with data "0xFF" and length 4.
+    */
     char *buf = (char*)talloc(18);
     uint32_t len = 0;
     buf[len++] = '0';
@@ -53,6 +84,11 @@ string string_from_hex(uint64_t value) {
 }
 
 bool string_equals(string a, string b) {
+    /*
+    This function compares two strings for equality.
+    It returns 1 (true) if the strings are equal, and 0 (false) otherwise.
+    Example usage: string_equals(string_l("Hello"), string_l("Hello")) would return true.
+    */
     if (a.length != b.length) return 0;
     for (uint32_t i = 0; i < a.length; i++) {
         if (a.data[i] != b.data[i]) return 0;
@@ -61,6 +97,11 @@ bool string_equals(string a, string b) {
 }
 
 string string_format_args(const char *fmt, const uint64_t *args, uint32_t arg_count) {
+    /*
+    This function creates a formatted string using a format specifier and a list of arguments.
+    It supports format specifiers such as %h (hex), %c (char), %s (string), and %i (integer).
+    Example usage: string_format_args("Value: %h", [255], 1) would create a string with data "Value: 0xFF".
+    */
     char *buf = (char*)talloc(256);
     uint32_t len = 0;
     uint32_t arg_index = 0;

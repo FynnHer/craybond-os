@@ -1,3 +1,8 @@
+/*
+kernel/kernel.c
+This is the main kernel file that initializes various subsystems such as UART, GPU, exceptions,
+interrupts, timer, and memory management unit (MMU). It serves as the entry point for the kernel.
+*/
 #include "console/kio.h"
 #include "console/serial/uart.h"
 #include "graph/graphics.h"

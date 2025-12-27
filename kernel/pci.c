@@ -1,3 +1,9 @@
+/*
+kernel/pci.c
+This file implements PCI (Peripheral Component Interconnect) bus scanning and initialization.
+It locates the PCI configuration space using ACPI tables, scans for devices,
+and provides functions to read and write PCI configuration registers.
+*/
 #include "pci.h"
 #include "console/kio.h"
 #include "ram_e.h"
@@ -5,17 +11,23 @@
 #include "fw/fw_cfg.h"
 #include "string.h"
 
-#define PCI_BUS_MAX 256
-#define PCI_SLOT_MAX 32
-#define PCI_FUNC_MAX 8
+#define PCI_BUS_MAX 256 // 0-255
+#define PCI_SLOT_MAX 32 // 0-31
+#define PCI_FUNC_MAX 8 // 0-7
 
-#define PCI_COMMAND_REGISTER 0x04
+#define PCI_COMMAND_REGISTER 0x04 // Offset for the Command Register in PCI configuration space
 
-static uint64_t pci_base;
+static uint64_t pci_base; // Base address of the PCI configuration space
 
-#define NINIT pci_base == 0x0
+#define NINIT pci_base == 0x0 // NINIT check macro
 
 struct acpi_rsdp_t {
+    /*
+    This structure represents the ACPI Root System Description Pointer (RSDP).
+    It contains fields for both ACPI 1.0 and ACPI 2.0+ specifications.
+    ACPI stands for Advanced Configuration and Power Interface and 
+    is used for hardware configuration and power management.
+    */
     char signature[8];
     uint8_t checksum;
     char oem_id[6];
@@ -29,6 +41,10 @@ struct acpi_rsdp_t {
 }__attribute__((packed));
 
 struct acpi_xsdt_t {
+    /*
+    This structure represents the ACPI Extended System Description Table (XSDT).
+    It contains a header followed by an array of pointers to other ACPI tables.
+    */
     char signature[4]; // "XSDT"
     uint32_t length;
     uint8_t revision;
@@ -42,6 +58,10 @@ struct acpi_xsdt_t {
 }__attribute__((packed));
 
 typedef struct acpi_mcfg_t {
+    /*
+    This structure represents the ACPI Memory-Mapped Configuration Space Base Address Description Table (MCFG).
+    It contains information about the base addresses for PCI configuration space access.
+    */
     char signature[4]; // "MCFG"
     uint32_t length;
     uint8_t revision;
@@ -65,6 +85,12 @@ typedef struct acpi_mcfg_t {
 #define RSDP_SEARCH_END   0x00100000
 
 void* find_rsdp() {
+    /*
+    This function searches for the ACPI RSDP (Root System Description Pointer)
+    in the memory range 0x000E0000 to 0x00100000.
+    It checks for the RSDP signature and validates the checksum.
+    If a valid RSDP is found, it returns a pointer to it; otherwise, it returns 0.
+    */
     for (uint64_t addr = RSDP_SEARCH_START; addr < RSDP_SEARCH_END; addr += 16) {
         const char* sig = (const char*)(uintptr_t)addr;
         if (sig[0] == 'R' && sig[1] == 'S' && sig[2] == 'D' && sig[3] == ' ' &&
@@ -91,6 +117,13 @@ void* find_rsdp() {
 }
 
 void find_pci(){
+    /*
+    This function locates the PCI configuration space base address
+    by searching the ACPI tables for the MCFG (Memory-Mapped Configuration Space Base Address Description Table).
+    It reads the RSDP, then the XSDT, and finally searches for the MCFG table.
+    If found, it sets the pci_base variable to the base address of the PCI configuration space.
+    If not found, it defaults pci_base to a hardcoded value.
+    */
     pci_base = 0x4010000000;
     return;
     struct fw_cfg_file file;
@@ -163,6 +196,13 @@ void find_pci(){
 }
 
 uint64_t pci_make_addr(uint32_t bus, uint32_t slot, uint32_t func, uint32_t offset){
+    /*
+    This function constructs a PCI configuration space address
+    given the bus number, slot number, function number, and register offset.
+    It combines these components into a single 64-bit address that can be used
+    to access PCI configuration registers.
+    Example usage: pci_make_addr(0, 1, 0, 0x10) would create an address for bus 0, slot 1, function 0, offset 0x10.
+    */
     return pci_base
             | (((uint64_t)bus) << 20)
             | (((uint64_t)slot) << 15)
@@ -171,6 +211,13 @@ uint64_t pci_make_addr(uint32_t bus, uint32_t slot, uint32_t func, uint32_t offs
 }
 
 uint64_t pci_get_bar_address(uint64_t base, uint8_t offset, uint8_t index){
+    /*
+    This function retrieves the base address of a PCI Base Address Register (BAR)
+    given the base address of the PCI device, the offset of the BAR register,
+    and the index of the BAR (0-5).
+    It reads the BAR value from the PCI configuration space and masks it to get the address.
+    Example usage: pci_get_bar_address(device_base, 0x10, 0) would return the address of the first BAR.
+    */
     if (NINIT)
         find_pci();
 
@@ -185,6 +232,14 @@ void debug_read_bar(uint64_t base, uint8_t offset, uint8_t index){
 
 
 uint64_t find_pci_device(uint32_t vendor_id, uint32_t device_id) {
+    /*
+    This function scans the PCI bus for a device with the specified vendor ID and device ID.
+    It iterates through all possible bus, slot, and function combinations,
+    reading the vendor and device IDs from the PCI configuration space.
+    If a matching device is found, it returns the base address of the device's PCI configuration space.
+    If no matching device is found, it returns 0.
+    Example usage: find_pci_device(0x8086, 0x1234) would search for a device with vendor ID 0x8086 and device ID 0x1234.
+    */
 
     if (NINIT)
         find_pci();
@@ -208,6 +263,13 @@ uint64_t find_pci_device(uint32_t vendor_id, uint32_t device_id) {
 }
 
 void dump_pci_config(uint64_t base) {
+    /*
+    This function dumps the PCI configuration space of a device
+    given the base address of the device's PCI configuration space.
+    It reads and prints the values of the first 64 bytes (0x00 to 0x3F)
+    of the PCI configuration space in 4-byte increments.
+    Example usage: dump_pci_config(device_base) would print the configuration space of the device.
+    */
     printf("Dumping PCI Configuration Space:");
     for (uint32_t offset = 0; offset < 0x40; offset += 4) {
         uint64_t val = read(base + offset);

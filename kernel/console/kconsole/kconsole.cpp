@@ -1,3 +1,9 @@
+/*
+kernel/console/kconsole/kconsole.cpp
+This file implements a basic kernel console that outputs characters and strings
+to the screen using a GPU. It manages cursor position, scrolling, and screen clearing.
+It is implemented in C++ to utilize classes for better organization.
+*/
 #include "kconsole.hpp"
 #include "ram_e.h"
 #include "graph/graphics.h"

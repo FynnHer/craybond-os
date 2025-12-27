@@ -1,3 +1,9 @@
+/*
+kernel/console/kio.c
+This file provides kernel I/O functions that utilize UART for serial communication.
+It includes functions to output characters, strings, hexadecimal values,
+and formatted strings to the console via UART.
+*/
 #include "kio.h"
 #include "serial/uart.h"
 #include "string.h"

@@ -1,3 +1,7 @@
+/*
+kernel/graph/graphic_types.h
+This file defines basic graphic types such as color, point, size, and rectangle.
+*/
 #pragma once
 
 #ifdef __cplusplus

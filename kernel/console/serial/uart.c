@@ -1,3 +1,10 @@
+/*
+kernel/console/serial/uart.c
+UART stands for Universal Asynchronous Receiver/Transmitter.
+This file contains functions to initialize and use the UART for serial communication.
+By writing to and reading from specific memory-mapped registers,
+we can send and receive data over a serial interface.
+*/
 #include "uart.h"
 #include "console/serial/uart.h"
 #include "ram_e.h"
@@ -14,6 +21,13 @@ uint64_t get_uart_base() {
 }
 
 void enable_uart() {
+  /*
+  This function initializes the UART by configuring its baud rate,
+  line control settings, and enabling the transmitter and receiver.
+  It writes specific values to the UART's memory-mapped registers
+  to set it up for serial communication.
+  Example usage: enable_uart(); would initialize the UART for use.
+  */
   write32(UART0_CR, 0x0); // Disable UART
 
   write32(UART0_IBRD, 1); // Set integer baud rate divisor

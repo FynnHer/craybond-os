@@ -1,14 +1,21 @@
+/*
+kernel/ram_e.c
+This file implements basic RAM access functions including reading and writing
+8, 16, 32, and 64-bit values. It also provides simple temporary and permanent
+memory allocation functions. The memory allocators use a bump pointer strategy
+to allocate memory sequentially from predefined regions.
+*/
 #include "ram_e.h"
 #include "types.h"
 #include "exception_handler.h"
 #include "console/kio.h"
 #include "dtb.h"
 
-static uint64_t total_ram_size;
-static uint64_t total_ram_start;
-static uint64_t calculated_ram_size;
-static uint64_t calculated_ram_start;
-static uint64_t calculated_ram_end;
+static uint64_t total_ram_size; // in bytes
+static uint64_t total_ram_start; // start address of total RAM
+static uint64_t calculated_ram_size; // in bytes
+static uint64_t calculated_ram_start; // start address of calculated RAM
+static uint64_t calculated_ram_end; // end address of calculated RAM
 
 uint8_t read8(uintptr_t addr) {
     return *(volatile uint8_t*)addr;
@@ -50,15 +57,19 @@ uint64_t read(uint64_t addr) {
     return read64(addr);
 }
 
-#define temp_start &heap_bottom + 0x500000
+#define temp_start &heap_bottom + 0x500000 // 5 MB after heap bottom
 
-extern uint64_t kernel_start;
-extern uint64_t heap_bottom;
-extern uint64_t heap_limit;
-uint64_t next_free_temp_memory = (uint64_t)&heap_bottom;
-uint64_t next_free_perm_memory = (uint64_t)temp_start;
+extern uint64_t kernel_start; // defined in linker script
+extern uint64_t heap_bottom; // defined in linker script
+extern uint64_t heap_limit; // defined in linker script
+uint64_t next_free_temp_memory = (uint64_t)&heap_bottom; // Start of temporary memory, implements a bump pointer allocator
+uint64_t next_free_perm_memory = (uint64_t)temp_start; // Start of permanent memory, implements a bump pointer allocator
 
 uint64_t talloc(uint64_t size) {
+    /*
+    This function allocates temporary memory of the given size using a bump pointer allocator.
+    It aligns the allocation to a 4KB boundary and checks for overflow against permanent memory.
+    */
     next_free_temp_memory = (next_free_temp_memory + 0xFFF) & ~0xFFF;
     if (next_free_temp_memory + size > next_free_perm_memory)
         panic_with_info(">>> Temporary allocator overflow", next_free_temp_memory);
@@ -68,6 +79,10 @@ uint64_t talloc(uint64_t size) {
 }
 
 uint64_t palloc(uint64_t size) {
+    /*
+    This function allocates permanent memory of the given size using a bump pointer allocator.
+    It aligns the allocation to a 4KB boundary and checks for overflow against the heap limit.
+    */
     next_free_perm_memory = (next_free_perm_memory + 0xFFF) & ~0xFFF;
     if (next_free_perm_memory > (uint64_t)&heap_limit)
         panic_with_info(">>> Permanent allocator overflow", (uint64_t)&heap_limit);
@@ -77,18 +92,33 @@ uint64_t palloc(uint64_t size) {
 }
 
 void free_temp(){
+    /*
+    This function frees all temporary memory by resetting the bump pointer to the start of the temporary memory region.
+    */
     next_free_temp_memory = (uint64_t)temp_start;
 }
 
 uint64_t mem_get_kmem_start(){
+    /*
+    This function returns the start address of the kernel memory region.
+    It is defined by the kernel_start symbol from the linker script.
+    */
     return (uint64_t)&kernel_start;
 }
 
 uint64_t mem_get_kmem_end(){
+    /*
+    This function returns the end address of the kernel memory region.
+    It is defined by the heap_limit symbol from the linker script.
+    */
     return (uint64_t)&heap_limit;
 }
 
 void calc_ram() {
+    /*
+    This function calculates the total and user RAM sizes and start addresses
+    by reading the device tree blob (DTB). It sets the global variables accordingly.
+    */
     if (get_memory_region(&total_ram_start, &total_ram_size)) {
         calculated_ram_end = total_ram_start + total_ram_size;
         calculated_ram_start = mem_get_kmem_end() + 0x1;
