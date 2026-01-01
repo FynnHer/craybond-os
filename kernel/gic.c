@@ -8,10 +8,13 @@ IRQ stands for Interrupt Request.
 #include "gic.h"
 #include "console/kio.h"
 #include "ram_e.h"
+#include "process/scheduler.h"
 
 #define IRQ_TIMER 30
 
 static uint64_t _msecs;
+
+extern void irq_el1_asm_handler();
 
 void gic_init() {
     /*
@@ -49,7 +52,6 @@ void timer_reset() {
     uint64_t freq;
     asm volatile ("mrs %0, cntfrq_el0" : "=r"(freq));
     uint64_t interval = (freq * _msecs) / 1000;
-    printf("[TIMER] Resetting interval to: %h\n", interval);
     asm volatile ("msr cntp_tval_el0, %0" :: "r"(interval));
 }
 
@@ -60,7 +62,6 @@ void timer_enable() {
     uint64_t val = 1;
     asm volatile ("msr cntp_ctl_el0, %0" :: "r"(val));
     asm volatile ("msr cntkctl_el1, %0" :: "r"(val));
-    printf("[TIMER] Timer enabled\n");
 }
 
 void timer_init(uint64_t msecs) {
@@ -87,14 +88,17 @@ void irq_el1_handler() {
     2. If it's the timer interrupt, reset the timer and signal end of interrupt.
     3. If it's an unhandled interrupt, log the interrupt ID.
     */
+   save_context_registers();
+   save_return_address_interrupt();
     uint32_t irq = read32(GICC_BASE + 0xC);
 
     if (irq == IRQ_TIMER) {
-        printf(">>> Timer IRQ fired\n");
         timer_reset();
         write32(GICC_BASE + 0x10, irq); // End of Interrupt
+        switch_proc(INTERRUPT);
+        restore_return_address_interrupt();
         return;
     }
 
-    printf(">>> Unhandled IRQ: %h\n", irq);
+    //printf(">>> Unhandled IRQ: %h\n", irq);
 }

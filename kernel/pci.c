@@ -57,7 +57,7 @@ struct acpi_xsdt_t {
     uint64_t entries[]; // Array of table pointers
 }__attribute__((packed));
 
-typedef struct acpi_mcfg_t {
+struct acpi_mcfg_t {
     /*
     This structure represents the ACPI Memory-Mapped Configuration Space Base Address Description Table (MCFG).
     It contains information about the base addresses for PCI configuration space access.
