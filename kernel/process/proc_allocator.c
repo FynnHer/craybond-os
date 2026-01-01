@@ -17,7 +17,7 @@ The allocators ensure 4KB alignment and check for overflow conditions.
 #define BOOT_PUD_ATTR PD_TABLE
 
 #define PAGE_TABLE_ENTRIES 512
-#define PAGE_SIZE PAGE_TABLE_ENTRIES * 8
+#define PAGE_SIZE 4096 // 4KB
 
 uint64_t mem_table_l1[PAGE_TABLE_ENTRIES] __attribute__((aligned(PAGE_SIZE)));
 
@@ -30,27 +30,27 @@ void proc_map_2mb(uint64_t va, uint64_t pa) {
     Example usage: proc_map_2mb(0x400000, 0x400000, MAIR_IDX_NORMAL) would map 2MB of normal memory.
     */
    uint64_t l1_index = (va >> 39) & 0x1FF;
-   uint64_t l2_index = (va >> 30) & 0x1FF;
-   uint64_t l3_index = (va >> 21) & 0x1FF;
+    uint64_t l2_index = (va >> 30) & 0x1FF;
+    uint64_t l3_index = (va >> 21) & 0x1FF;
 
-   if (!(mem_table_l1[l1_index] & 1)) {
-    uint64_t* pud = (uint64_t*)palloc(PAGE_SIZE);
-    for (int i = 0; i < PAGE_SIZE; i++) pud[i] = 0;
-    mem_table_l1[l1_index] = ((uint64_t)pud & 0xFFFFFFFFF000ULL) | PD_TABLE;
-   }
+    if (!(mem_table_l1[l1_index] & 1)) {
+        uint64_t* pud = (uint64_t*)palloc(PAGE_SIZE);
+        for (int i = 0; i < PAGE_TABLE_ENTRIES; i++) pud[i] = 0;
+        mem_table_l1[l1_index] = ((uint64_t)pud & 0xFFFFFFFFF000ULL) | PD_TABLE;
+    }
 
-   uint64_t* pud = (uint64_t*)(mem_table_l1[l1_index] & 0xFFFFFFFFF000ULL);
+    uint64_t* pud = (uint64_t*)(mem_table_l1[l1_index] & 0xFFFFFFFFF000ULL);
 
-   if (!(pud[l2_index] & 1)) {
-    uint64_t* pmd = (uint64_t*)palloc(PAGE_SIZE);
-    for (int i = 0; i < PAGE_TABLE_ENTRIES; i++) pmd[i] = 0;
-    pud[l2_index] = ((uint64_t)pmd & 0xFFFFFFFFF000ULL) | PD_TABLE;
-   }
+    if (!(pud[l2_index] & 1)) {
+        uint64_t* pmd = (uint64_t*)palloc(PAGE_SIZE);
+        for (int i = 0; i < PAGE_TABLE_ENTRIES; i++) pmd[i] = 0;
+        pud[l2_index] = ((uint64_t)pmd & 0xFFFFFFFFF000ULL) | PD_TABLE;
+    }
 
-   uint64_t* pmd = (uint64_t*)(pud[l2_index] & 0xFFFFFFFFF000ULL);
+    uint64_t* pmd = (uint64_t*)(pud[l2_index] & 0xFFFFFFFFF000ULL);
 
-   uint64_t attr = PD_ACCESS | (1 << 2) | PD_BLOCK;
-   pmd[l3_index] = (pa & 0xFFFFFFFFF00000ULL) | attr;
+    uint64_t attr = PD_ACCESS | (1 << 2) | PD_BLOCK;
+    pmd[l3_index] = (pa & 0xFFFFFFFFF000ULL) | attr;
 }
 
 void proc_map_4kb(uint64_t va, uint64_t pa) {
@@ -110,7 +110,10 @@ void* alloc_proc_mem(uint64_t size) {
     uint64_t start = get_user_ram_start();
     uint64_t end = get_user_ram_end();
 
-    size = ((size + PAGE_SIZE - 1) / PAGE_SIZE) * PAGE_SIZE; // Align size to 4KB
+    start = (start + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
+    end = end & ~(PAGE_SIZE - 1);
+
+    size = ((size + PAGE_SIZE - 1) / PAGE_SIZE) * PAGE_SIZE;
     for (uint64_t va = start; va + size <= end; va += PAGE_SIZE) {
         bool free = true;
         for (uint64_t offset = 0; offset < size; offset += PAGE_SIZE) {
@@ -132,12 +135,12 @@ void* alloc_proc_mem(uint64_t size) {
             }
         }
         if (free) {
-            for (uint64_t offset = 0; offset < size; offset += PAGE_SIZE) {
+            for (uint64_t offset = 0; offset < size; offset += PAGE_SIZE){
                 proc_map_4kb(va + offset, va + offset);
                 register_proc_memory(va + offset, va + offset);
             }
             return (void*)va;
         }
     }
-    return 0; // No sufficient free memory found
+    return 0;
 }

@@ -1,9 +1,9 @@
 .global save_context
 save_context:
-// NOTE: possibly losing values of x0 and x30
+// NOTE: WE'RE POSSIBLY LOSING VALUES OF x0 and x30 doing this
     // x0: pointer to process_t
 
-    // save general purpose registers x1-x30 (x0 holds the pointer)
+    // Save general-purpose registers x1-x30 (excluding x0 which holds the pointer)
     stp x1, x2, [x0, #(8 * 0)]
     stp x3, x4, [x0, #(8 * 2)]
     stp x5, x6, [x0, #(8 * 4)]
@@ -20,7 +20,7 @@ save_context:
     stp x27, x28, [x0, #(8 * 26)]
     stp x29, x30, [x0, #(8 * 28)]
 
-    // Save sp
+    // Save SP
     str x11, [x0, #(8 * 31)]
 
     //Save status bits
@@ -31,9 +31,9 @@ save_context:
 .global save_pc_interrupt
 save_pc_interrupt:
     // x0: pointer to process_t
-
+    
     mrs x1, elr_el1
-    str x1, [x0, #(8 * 22)]//PC 
+    str x1, [x0, #(8 * 32)]//PC
 
     ret
 
@@ -56,7 +56,7 @@ restore_context:
     ldp x23, x24, [x0, #(8 * 22)]
     ldp x25, x26, [x0, #(8 * 24)]
     ldp x27, x28, [x0, #(8 * 26)]
-    ldp x29, x30, [x0, #(8 * 28)]   
+    ldp x29, x30, [x0, #(8 * 28)]    
 
     ldr x11, [x0, #(8 * 31)]
     mov sp, x11
@@ -76,7 +76,7 @@ restore_context:
 restore_context_yield:
     // x0: pointer to process_t
 
-    // Resotre general-purpose registers x1-x30
+    // Restore general-purpose registers x1-x30
     ldp x1, x2, [x0, #(8 * 0)]
     ldp x3, x4, [x0, #(8 * 2)]
     ldp x5, x6, [x0, #(8 * 4)]
@@ -91,7 +91,7 @@ restore_context_yield:
     ldp x23, x24, [x0, #(8 * 22)]
     ldp x25, x26, [x0, #(8 * 24)]
     ldp x27, x28, [x0, #(8 * 26)]
-    ldp x29, x30, [x0, #(8 * 28)]
+    ldp x29, x30, [x0, #(8 * 28)]    
 
     ldr x11, [x0, #(8 * 31)]
     mov sp, x11
@@ -99,7 +99,6 @@ restore_context_yield:
     ldr x11, [x0, #(8 * 33)]
     msr spsr_el1, x11
     ldr x11, [x0, #(8 * 32)]
-
     mov x0, x15
     mov x1, x14
     mov x30, x12
