@@ -17,14 +17,16 @@ interrupts, timer, and memory management unit (MMU). It serves as the entry poin
 #include "process/scheduler.h"
 
 void func1() {
+    int j = 0;
     while (1) {
-        printf("First process");
+        printf("First process %i", j++);
     }
 }
 
 void func2() {
+    int i = 0;
     while (1) {
-        printf("Second process");
+        printf("Second process %i", i++);
     }
 }
 
