@@ -6,7 +6,11 @@ echo "Building project"
 make 
 echo "Running emulator"
 
-#qemu-system-aarch64 \
+ARGS=""
+if [ "$1" = "debug" ]; then
+    ARGS="-monitor unix:/tmp/qemu-monitor,server,nowait -s -S"
+fi
+
 ../qemu/build/qemu-system-aarch64 \
 -M virt \
 -cpu cortex-a72 \
@@ -15,6 +19,5 @@ echo "Running emulator"
 -device ramfb \
 -display sdl \
 -serial mon:stdio \
-# -monitor unix:/tmp/qemu-monitor,server,nowait -s -S \
-# -nographic \
+$ARGS
 

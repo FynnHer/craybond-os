@@ -2,11 +2,13 @@
 
 DIR="$(pwd)"
 
+ARGS="$@"
+
 # ./run run in the background
-( cd "$DIR" && ./run ) &
+( cd "$DIR" && ./run debug) &
 
 # short timeout
 sleep 0.5
 
 # ./debug run in the background
-( cd "$DIR" && ./debug ) &
+( cd "$DIR" && ./debug $ARGS) &
