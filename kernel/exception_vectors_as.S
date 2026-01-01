@@ -40,3 +40,5 @@ irq_el1_asm_handler:
     mrs x10, spsr_el1
 
     bl irq_el1_handler
+
+    eret; //prob wont be called but if there are 0 processes, we want to return
