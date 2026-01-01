@@ -96,8 +96,6 @@ void irq_el1_handler() {
         timer_reset();
         write32(GICC_BASE + 0x10, irq); // End of Interrupt
         switch_proc(INTERRUPT);
-        restore_return_address_interrupt();
-        return;
     }
 
     //printf(">>> Unhandled IRQ: %h\n", irq);
