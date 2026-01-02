@@ -9,6 +9,7 @@ FIQ stands for Fast Interrupt Request.
 #include "console/serial/uart.h"
 #include "string.h"
 #include "console/kio.h"
+#include "mmu.h"
 
 void set_exception_vectors(){
     /*
@@ -36,6 +37,10 @@ void handle_exception(const char* type) {
     asm volatile ("mrs %0, esr_el1" : "=r"(esr));
     asm volatile ("mrs %0, elr_el1" : "=r"(elr));
     asm volatile ("mrs %0, far_el1" : "=r"(far));
+
+    disable_visual();
+
+    debug_mmu_address(far);
 
     string s = string_format("%s EXCEPTION\nESR_EL1: %h\nELR_EL1: %h\n,FAR_EL1: %h",(uint64_t)string_l(type).data,esr,elr,far);
     panic(s.data);

@@ -62,6 +62,7 @@ uint64_t read(uint64_t addr) {
 extern uint64_t kernel_start; // defined in linker script
 extern uint64_t heap_bottom; // defined in linker script
 extern uint64_t heap_limit; // defined in linker script
+extern uint64_t kcode_end; // defined in linker script
 uint64_t next_free_temp_memory = (uint64_t)&heap_bottom; // Start of temporary memory, implements a bump pointer allocator
 uint64_t next_free_perm_memory = (uint64_t)temp_start; // Start of permanent memory, implements a bump pointer allocator
 
@@ -111,7 +112,7 @@ uint64_t mem_get_kmem_end(){
     This function returns the end address of the kernel memory region.
     It is defined by the heap_limit symbol from the linker script.
     */
-    return (uint64_t)&heap_limit;
+    return (uint64_t)&kcode_end;
 }
 
 void calc_ram() {
@@ -122,6 +123,9 @@ void calc_ram() {
     if (get_memory_region(&total_ram_start, &total_ram_size)) {
         calculated_ram_end = total_ram_start + total_ram_size;
         calculated_ram_start = mem_get_kmem_end() + 0x1;
+        calculated_ram_start = ((calculated_ram_start) & ~((1ULL << 21) - 1)); // Align to 2MB
+        calculated_ram_end = ((calculated_ram_end) & ~((1ULL << 21) - 1)); // Align to 2MB
+
         calculated_ram_size = calculated_ram_end - calculated_ram_start;
         printf("Device has %h memory starting at %h. %h for users starting at %h  ", total_ram_size, total_ram_start, calculated_ram_size, calculated_ram_start);
     }

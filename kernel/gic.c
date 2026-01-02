@@ -26,8 +26,6 @@ void gic_init() {
 
     */
     uint64_t current_el; // Current Exception Level
-    asm volatile ("mrs %0, CurrentEL" : "=r"(current_el)); // Read CurrentEL system register | mrs = Move Register from System
-    printf("[GIC INIT] CurrentEL: %h\n", current_el);
 
     write8(GICD_BASE, 0); // Disable Distributor
     write8(GICC_BASE, 0); // Disable CPU Interface
@@ -97,6 +95,4 @@ void irq_el1_handler() {
         write32(GICC_BASE + 0x10, irq); // End of Interrupt
         switch_proc(INTERRUPT);
     }
-
-    //printf(">>> Unhandled IRQ: %h\n", irq);
 }
