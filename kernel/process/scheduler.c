@@ -44,6 +44,8 @@ void switch_proc(ProcSwitchReason reason) {
             return; // No other ready process found
     }
 
+    printf("New process chosen");
+
     current_proc = next_proc;
     restore_context(&processes[current_proc]);
 }
@@ -195,7 +197,7 @@ process_t* create_process(void (*func)(), uint64_t code_size, uint64_t func_base
 
     proc->pc = (uint64_t)code_dest;
     printf("Process allocated with address at %h, stack at %h", proc->pc, proc->sp);
-    proc->spsr = 0x3C5; // clean flags
+    proc->spsr = 0xC0; // clean flags
     proc->state = READY;
     proc->id = proc_count++;
     

@@ -58,7 +58,7 @@ void mmu_map_2mb(uint64_t va, uint64_t pa, uint64_t attr_index) { // Map a 2MB p
 
     uint64_t* l3 = (uint64_t*)(l2[l2_index] & 0xFFFFFFFFF000ULL); // Get L3 table address from L2 entry
 
-    uint64_t attr = (1 << 54) | (0 << 53) | PD_ACCESS | (0b11 << 8) | (0b00 << 6) | (attr_index << 2) | PD_BLOCK; // Set attributes for the block entry
+    uint64_t attr = (0 << 54) | (0 << 53) | PD_ACCESS | (0b11 << 8) | (0b00 << 6) | (attr_index << 2) | PD_BLOCK; // Set attributes for the block entry
     l3[l3_index] = (pa & 0xFFFFFFFFF000ULL) | attr; // Set L3 entry to map 2MB page
 }
 
@@ -98,7 +98,7 @@ void mmu_map_4kb(uint64_t va, uint64_t pa, uint64_t attr_index, int level) { // 
     uint64_t* l4 = (uint64_t*)(l3[l3_index] & 0xFFFFFFFFF000ULL); // Get L4 table address from L3 entry
     //54 = UXN level | 53 = PXN !level | 8 = share | 6 = Access permission
     uint8_t permission = level == 1 ? 0b00 : 0b01;
-    uint64_t attr = (level << 54) | (!level << 53) | PD_ACCESS | (0b11 << 8) | (permission << 6) | (attr_index << 2) | 0b11; // Set attributes for the page entry
+    uint64_t attr = (level << 54) | (0 << 53) | PD_ACCESS | (0b11 << 8) | (permission << 6) | (attr_index << 2) | 0b11; // Set attributes for the page entry
     
     l4[l4_index] = (pa & 0xFFFFFFFFF000ULL) | attr; // Set L4 entry to map 4KB page
 }

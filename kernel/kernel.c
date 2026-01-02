@@ -48,6 +48,7 @@ void kernel_main() {
 
     printf("Interrupts enabled");
 
+    mmu_enable_verbose();
     mmu_init();
     printf("MMU Mapped");
 
