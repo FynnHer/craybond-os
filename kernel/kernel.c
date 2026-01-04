@@ -44,8 +44,6 @@ void kernel_main() {
 
     printf("Interrupts init");
 
-    enable_interrupt();
-
     printf("Interrupts enabled");
 
     //mmu_enable_verbose();
@@ -68,9 +66,5 @@ void kernel_main() {
 
     start_scheduler();
 
-    printf("Scheduler started");
-
-    while (1) {
-        printf("Current process %i", get_current_proc());
-    }
+    printf_raw("Error: Kernel did not activate any process");
 }

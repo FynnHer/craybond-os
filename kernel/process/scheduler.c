@@ -39,7 +39,6 @@ void switch_proc(ProcSwitchReason reason) {
     }
     
     current_proc = next_proc;
-    printf_raw("sb: %h", processes[current_proc].spsr);
     restore_context(&processes[current_proc]);
 }
 
@@ -203,6 +202,7 @@ void start_scheduler() {
     switches at regular intervals.
     Example usage: start_scheduler(); would begin the scheduling of processes.
     */
+    disable_interrupt();
     timer_init(10);
     switch_proc(YIELD);
 }
