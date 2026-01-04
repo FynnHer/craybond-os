@@ -39,7 +39,7 @@ void gic_init() {
     write8(GICC_BASE, 1); // Enable CPU Interface
     write8(GICD_BASE, 1); // Enable Distributor
 
-    printf("[GIC INIT] GIC Initialized\n");
+    kprintf("[GIC INIT] GIC Initialized\n");
 }
 
 void timer_reset() {

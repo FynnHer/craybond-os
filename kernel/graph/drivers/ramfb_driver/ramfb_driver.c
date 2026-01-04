@@ -140,7 +140,7 @@ bool rfb_init(uint32_t w, uint32_t h) {
     fw_find_file(string_l("etc/ramfb"), &file);
     
     if (file.selector == 0x0){
-        printf("Ramfb not found");
+        kprintf("Ramfb not found");
         return false;
     }
 
@@ -157,7 +157,7 @@ bool rfb_init(uint32_t w, uint32_t h) {
 
     fw_cfg_dma_write(&fb, sizeof(fb), file.selector);
     
-    printf("ramfb configured");
+    kprintf("ramfb configured");
 
     return true;
 }
