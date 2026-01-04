@@ -19,20 +19,20 @@ static uint32_t compute_length(const char *s, uint32_t max_length) {
     return len;
 }
 
-string string_l(const char *literal) {
+kstring string_l(const char *literal) {
     /*
     This function creates a string structure from a string literal.
     It calculates the length of the literal and returns a string object.
     A literal is a string defined directly in the code, e.g., "Hello, World!".
     */
     uint32_t len = compute_length(literal, 0);
-    string str;
+    kstring str;
     str.data = (char *)literal;
     str.length = len;
     return str;
 }
 
-string string_ca_max(const char *array, uint32_t max_length) {
+kstring string_ca_max(const char *array, uint32_t max_length) {
     /*
     This function creates a string structure from a character array with a specified maximum length.
     It computes the length of the array up to max_length and returns a string object.
@@ -40,13 +40,13 @@ string string_ca_max(const char *array, uint32_t max_length) {
     */
     uint32_t len = compute_length(array, max_length);
 
-    string str;
+    kstring str;
     str.data = (char *)array;
     str.length = len;
     return str;
 }
 
-string string_c(const char c) {
+kstring string_c(const char c) {
     /*
     This function creates a string structure from a single character.
     It allocates memory for a 2-character array (the character and a null terminator)
@@ -56,10 +56,10 @@ string string_c(const char c) {
     char *buf = (char*)talloc(2);
     buf[0] = c;
     buf[1] = 0;
-    return (string){.data = buf, .length = 1};
+    return (kstring){.data = buf, .length = 1};
 }
 
-string string_from_hex(uint64_t value) {
+kstring string_from_hex(uint64_t value) {
     /*
     This function creates a string representation of a hexadecimal value.
     It converts the given uint64_t value into a hexadecimal string prefixed with "0x".
@@ -80,10 +80,10 @@ string string_from_hex(uint64_t value) {
         }
     }
     buf[len] = '\0';
-    return (string){.data = buf, .length = len};
+    return (kstring){.data = buf, .length = len};
 }
 
-bool string_equals(string a, string b) {
+bool string_equals(kstring a, kstring b) {
     /*
     This function compares two strings for equality.
     It returns 1 (true) if the strings are equal, and 0 (false) otherwise.
@@ -96,7 +96,7 @@ bool string_equals(string a, string b) {
     return 1;
 }
 
-string string_format_args(const char *fmt, const uint64_t *args, uint32_t arg_count) {
+kstring string_format_args(const char *fmt, const uint64_t *args, uint32_t arg_count) {
     /*
     This function creates a formatted string using a format specifier and a list of arguments.
     It supports format specifiers such as %h (hex), %c (char), %s (string), and %i (integer).
@@ -112,7 +112,7 @@ string string_format_args(const char *fmt, const uint64_t *args, uint32_t arg_co
             if (arg_index >= arg_count) break;
             if (fmt[i] == 'h') {
                 uint64_t val = args[arg_index++];
-                string hex = string_from_hex(val);
+                kstring hex = string_from_hex(val);
                 for (uint32_t j = 0; j < hex.length && len < 255; j++) buf[len++] = hex.data[j];
             } else if (fmt[i] == 'c') {
                 uint64_t val = args[arg_index++];
@@ -156,5 +156,5 @@ string string_format_args(const char *fmt, const uint64_t *args, uint32_t arg_co
     }
 
     buf[len] = 0;
-    return (string){.data = buf, .length = len};
+    return (kstring){.data = buf, .length = len};
 }
