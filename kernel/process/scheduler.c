@@ -233,6 +233,7 @@ void proc_func() {
     Example usage: This function would be executed as part of a created process.
     */
     while (1) {
+        // disable_interrupt(); // Ensure interrupts are disabled during syscall
         register uint64_t x0 asm("x0") = (uint64_t)&fmt;
         register uint64_t x1 asm("x1") = (uint64_t)&j;
         register uint64_t x2 asm("x2") = 1;
@@ -244,6 +245,7 @@ void proc_func() {
             : "r"(x0), "r"(x1), "r"(x2), "r"(x8)
             : "memory"
         );
+        // enable_interrupt(); // Re-enable interrupts after syscall
         j++;
     }
 }
