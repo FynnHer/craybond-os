@@ -63,6 +63,9 @@ extern uint64_t kernel_start; // defined in linker script
 extern uint64_t heap_bottom; // defined in linker script
 extern uint64_t heap_limit; // defined in linker script
 extern uint64_t kcode_end; // defined in linker script
+extern uint64_t kfull_end; // defined in linker script
+extern uint64_t shared_start; // defined in linker script
+extern uint64_t shared_end; // defined in linker script
 uint64_t next_free_temp_memory = (uint64_t)&heap_bottom; // Start of temporary memory, implements a bump pointer allocator
 uint64_t next_free_perm_memory = (uint64_t)temp_start; // Start of permanent memory, implements a bump pointer allocator
 
@@ -122,7 +125,7 @@ void calc_ram() {
     */
     if (get_memory_region(&total_ram_start, &total_ram_size)) {
         calculated_ram_end = total_ram_start + total_ram_size;
-        calculated_ram_start = mem_get_kmem_end() + 0x1;
+        calculated_ram_start = ((uint64_t)&kfull_end) + 0x1;
         calculated_ram_start = ((calculated_ram_start) & ~((1ULL << 21) - 1)); // Align to 2MB
         calculated_ram_end = ((calculated_ram_end) & ~((1ULL << 21) - 1)); // Align to 2MB
 
@@ -150,4 +153,12 @@ uint64_t get_user_ram_start() {
 
 uint64_t get_user_ram_end() {
     calcvar(calculated_ram_end);
+}
+
+uint64_t get_shared_start() {
+    return (uint64_t)&shared_start;
+}
+
+uint64_t get_shared_end() {
+    return (uint64_t)&shared_end;
 }

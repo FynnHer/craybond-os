@@ -15,6 +15,7 @@ interrupts, timer, and memory management unit (MMU). It serves as the entry poin
 #include "dtb.h"
 #include "gic.h"
 #include "process/scheduler.h"
+#include "process/default_process.h"
 
 void kernel_main() {
 
@@ -46,7 +47,7 @@ void kernel_main() {
 
     kprintf("Interrupts enabled");
 
-    //mmu_enable_verbose();
+    mmu_enable_verbose();
     mmu_init();
     kprintf("MMU Mapped");
 

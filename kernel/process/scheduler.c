@@ -39,6 +39,7 @@ void switch_proc(ProcSwitchReason reason) {
     }
     
     current_proc = next_proc;
+    // kprintf_raw("Resumiong execution of process %i at %h", current_proc, processes[current_proc].pc);
     restore_context(&processes[current_proc]);
 }
 
@@ -106,7 +107,7 @@ void relocate_code(void* dst, void* src, uint32_t size, uint64_t src_data_base,
             uint64_t pc_page = (src_base + i * 4) & ~0xFFFULL;
             uint64_t target = pc_page + offset;
 
-            //kprintf("Was at offset %i of original code, so at address %h and data started at %h",offset,target,src_data_base);
+            kprintf("Was at offset %i of original code, so at address %h and data started at %h",offset,target,src_data_base);
             
             // uint64_t target = (src_base & ~0xFFFULL) + ((i * 4 + offset) & ~0xFFFULL);
             bool internal = (target >= src_data_base) && (target < src_data_base + data_size);
@@ -137,9 +138,9 @@ void relocate_code(void* dst, void* src, uint32_t size, uint64_t src_data_base,
                 pc_page = (dst_base + i * 4) & ~0xFFFULL;
                 target = pc_page + offset;
 
-                //kprintf("Confirmation: New address is %h compared to calculated one %h",target, new_target);
+                kprintf("Confirmation: New address is %h compared to calculated one %h",target, new_target);
             } else {
-                kprintf("We dont support this type of symbol yet");
+                kprintf("[ERROR]: Symbol not supported");
             }
         }
 
@@ -218,44 +219,3 @@ Attributes for the sample process code and data segments.
 These attributes place the code and data in specific sections of the binary,
 which are defined in the linker script for proper memory layout.
 */
-
-__attribute__((section(".rodata.proc1"))) // Read-only data section for process 1
-static const char fmt[] = "Process %i";
-__attribute__((section(".data.proc1"))) // Writable data section for process 1
-static uint64_t j = 0; // Counter variable for process 1
-
-__attribute__((section(".text.proc1"))) // Code section for process 1
-void proc_func() {
-    /*
-    This is a sample process function that runs in user mode (EL0). It demonstrates
-    how a process can use system calls to print messages. The function enters an
-    infinite loop, printing its process ID and a counter value.
-    Example usage: This function would be executed as part of a created process.
-    */
-    while (1) {
-        register uint64_t x0 asm("x0") = (uint64_t)&fmt;
-        register uint64_t x1 asm("x1") = (uint64_t)&j;
-        register uint64_t x2 asm("x2") = 1;
-        register uint64_t x8 asm("x8") = 3;
-
-        asm volatile(
-            "svc #3"
-            :
-            : "r"(x0), "r"(x1), "r"(x2), "r"(x8)
-            : "memory"
-        );
-        j++;
-    }
-}
-
-void default_processes(){
-    extern uint8_t proc_1_start;
-    extern uint8_t proc_1_end;
-    extern uint8_t proc_1_rodata_start;
-    extern uint8_t proc_1_rodata_end;
-
-    kprintf("DATA STARTS AT %h ENDS AT %h",(uint64_t)&proc_1_rodata_start,(uint64_t)&proc_1_rodata_end);
-
-    create_process(proc_func, (uint64_t)&proc_1_end - (uint64_t)&proc_1_start, (uint64_t)&proc_1_start, (void*)&fmt, (uint64_t)&proc_1_rodata_end - (uint64_t)&proc_1_rodata_start);
-    create_process(proc_func, (uint64_t)&proc_1_end - (uint64_t)&proc_1_start, (uint64_t)&proc_1_start, (void*)&fmt, (uint64_t)&proc_1_rodata_end - (uint64_t)&proc_1_rodata_start);
-}
