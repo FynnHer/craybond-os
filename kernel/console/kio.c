@@ -24,11 +24,25 @@ void putc(const char c){
 }
 
 void printf_args(const char *fmt, const uint64_t *args, uint32_t arg_count){
+    /*
+    IRQs are disabled during the execution of this function to prevent
+    context switches that could interfere with the formatted output.
+    This ensures that the output remains consistent and uninterrupted.
+    Example usage: printf_args("Value: %h", &value, 1); would print the hexadecimal value.
+    IRQ stands for Interrupt Request. This is a hardware signal sent to the processor to gain its attention.
+    When an IRQ is received, the processor temporarily halts its current activities
+    to execute a function called an interrupt handler or interrupt service routine (ISR).
+    */
     asm volatile ("msr daifset, #2"); // Disable IRQs
+    printf_args_raw(fmt, args, arg_count);
+    asm volatile ("msr daifclr, #2"); // Enable IRQs
+    
+}
+
+void printf_args_raw(const char *fmt, const uint64_t *args, uint32_t arg_count) {
     string s = string_format_args(fmt, args, arg_count);
     puts(s.data);
     putc('\n');
-    asm volatile ("msr daifclr, #2"); // Enable IRQs
 }
 
 void disable_visual() {

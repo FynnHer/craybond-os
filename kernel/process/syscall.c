@@ -23,10 +23,10 @@ void sync_el0_handler_c() {
     uint64_t x8;
     asm volatile ("mov %0, x8" : "=r"(x8)); // Get syscall number from x8
 
-    //uint64_t esr, elr, far;
+    uint64_t esr, elr, far;
 
     //asm volatile ("mrs %0, esr_el1" : "=r"(esr));
-    //asm volatile ("mrs %0, elr_el1" : "=r"(elr));
+    asm volatile ("mrs %0, elr_el1" : "=r"(elr));
     
     //uint32_t ec = (esr >> 26) & 0x3F; // Exception Class
 
@@ -35,13 +35,14 @@ void sync_el0_handler_c() {
     //uint32_t instr = *(uint32_t *)elr;
 
     //uint8_t svc_num = (instr >> 5) & 0xFFFF; // Extract SVC number from instruction
-    uart_puts("Hello");
+    uart_raw_puts("Hello");
+    // uart_puts("Hello");
 
     if (x8 == 3) { // Syscall number 3: Print
         // x0: format string
         // x1: first argument
         // x2: number of arguments
-        printf_args(x0, x1, x2);
+        printf_args_raw(x0, x1, x2);
     }
 
     asm volatile ("eret"); // Return from exception
