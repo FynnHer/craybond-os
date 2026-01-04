@@ -25,7 +25,6 @@ void gic_init() {
     GICC - GIC CPU Interface -> This component is responsible for delivering interrupts to the CPU cores
 
     */
-    uint64_t current_el; // Current Exception Level
 
     write8(GICD_BASE, 0); // Disable Distributor
     write8(GICC_BASE, 0); // Disable CPU Interface
@@ -76,7 +75,15 @@ void enable_interrupt() {
     Enable global interrupts by clearing the interrupt mask.
     */
     asm volatile ("msr daifclr, #2"); // Enable IRQs
-    printf("[INTERRUPTS] Global interrupts enabled\n");
+    asm volatile ("isb");
+}
+
+void disable_interrupt() {
+    /*
+    Disable global interrupts by setting the interrupt mask.
+    */
+    asm volatile ("msr daifset, #2"); // Disable IRQs
+    asm volatile ("isb");
 }
 
 void irq_el1_handler() {

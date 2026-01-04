@@ -7,19 +7,20 @@ and formatted strings to the console via UART.
 #include "kio.h"
 #include "serial/uart.h"
 #include "string.h"
+#include "gic.h"
 #include "kconsole/kconsole.h"
 
 static bool use_visual = true;
 
 void puts(const char *s){
     uart_raw_puts(s);
-    if(use_visual)
+    if (use_visual)
         kconsole_puts(s);
 }
 
 void putc(const char c){
-    uart_putc(c);
-    if(use_visual)
+    uart_raw_putc(c);
+    if (use_visual)
         kconsole_putc(c);
 }
 
@@ -33,13 +34,13 @@ void printf_args(const char *fmt, const uint64_t *args, uint32_t arg_count){
     When an IRQ is received, the processor temporarily halts its current activities
     to execute a function called an interrupt handler or interrupt service routine (ISR).
     */
-    asm volatile ("msr daifset, #2"); // Disable IRQs
+    disable_interrupt();
     printf_args_raw(fmt, args, arg_count);
-    asm volatile ("msr daifclr, #2"); // Enable IRQs
+    enable_interrupt();
     
 }
 
-void printf_args_raw(const char *fmt, const uint64_t *args, uint32_t arg_count) {
+void printf_args_raw(const char *fmt, const uint64_t *args, uint32_t arg_count){
     string s = string_format_args(fmt, args, arg_count);
     puts(s.data);
     putc('\n');

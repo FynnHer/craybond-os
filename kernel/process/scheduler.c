@@ -8,9 +8,6 @@
 extern void save_context(process_t* proc);
 extern void save_pc_interrupt(process_t* proc);
 extern void restore_context(process_t* proc);
-extern void restore_context(process_t* proc);
-extern void restore_context_yield(process_t* proc);
-extern void restore_pc_interrupt(process_t* proc);
 
 #define MAX_PROCS 16
 process_t processes[MAX_PROCS];
@@ -25,10 +22,6 @@ void save_return_address_interrupt() {
     save_pc_interrupt(&processes[current_proc]);
 }
 
-void restore_return_address_interrupt() {
-    restore_pc_interrupt(&processes[current_proc]);
-}
-
 void switch_proc(ProcSwitchReason reason) {
     /*
     This function switches the currently running process to the next one in a round-robin fashion.
@@ -40,11 +33,11 @@ void switch_proc(ProcSwitchReason reason) {
         return;
     int next_proc = (current_proc + 1) % proc_count;
     while (processes[next_proc].state != READY) {
-         next_proc = (next_proc + 1) % proc_count;
-         if (next_proc == current_proc)
-            return; // No other ready process found
+        next_proc = (next_proc + 1) % proc_count;
+        if (next_proc == current_proc)
+            return;
     }
-
+    
     current_proc = next_proc;
     printf_raw("New process chosen %h",processes[current_proc].pc);
     restore_context(&processes[current_proc]);
@@ -116,8 +109,8 @@ void relocate_code(void* dst, void* src, uint32_t size, uint64_t src_data_base,
             uint64_t pc_page = (src_base + i * 4) & ~0xFFFULL;
             uint64_t target = pc_page + offset;
 
-            printf("Was at offset %i of original code, so at address %h and data started at %h", offset, target, src_data_base);
-
+            printf("Was at offset %i of original code, so at address %h and data started at %h",offset,target,src_data_base);
+            
             // uint64_t target = (src_base & ~0xFFFULL) + ((i * 4 + offset) & ~0xFFFULL);
             bool internal = (target >= src_data_base) && (target < src_data_base + data_size);
 
@@ -126,27 +119,28 @@ void relocate_code(void* dst, void* src, uint32_t size, uint64_t src_data_base,
                 This branch targets data within the data segment, so we need to adjust 
                 the address to point to the new data location.
                 */
-                uint64_t data_offset = target - src_data_base;
+                                uint64_t data_offset = target - src_data_base;
                 uint64_t new_target = dst_data_base + data_offset;
 
                 uint64_t dst_pc_page = (dst_base + i * 4) & ~0xFFFULL;
                 int64_t new_offset = (int64_t)(new_target - dst_pc_page);
-
+                
                 uint64_t new_immhi = (new_offset >> 14) & 0x7FFFF;
                 uint64_t new_immlo = (new_offset >> 12) & 0x3;
-
+                
                 instr = (instr & ~0x60000000) | (new_immlo << 29);
                 instr = (instr & ~(0x7FFFF << 5)) | (new_immhi << 5);
-                printf("Were inside data stack, so new address is: %i", data_offset);
+
+                printf("We're inside data stack, so new address is: %i",data_offset);
 
                 immlo = (instr >> 29) & 0x3;
                 immhi = (instr >> 5) & 0x7FFFF;
-                offset = ((int64_t)((immhi << 14) | (immlo << 12)) << 43) >> 43; // this line recalculates offset for verification by sign extension
-                
+                offset = ((int64_t)((immhi << 14) | (immlo << 12)) << 43) >> 43;
+
                 pc_page = (dst_base + i * 4) & ~0xFFFULL;
                 target = pc_page + offset;
 
-                printf("Confirmation: New address is %h compared to calculated one %h", target, new_target);
+                printf("Confirmation: New address is %h compared to calculated one %h",target, new_target);
             } else {
                 printf("We dont support this type of symbol yet");
             }
@@ -169,7 +163,7 @@ process_t* create_process(void (*func)(), uint64_t code_size, uint64_t func_base
 
     process_t* proc = &processes[proc_count];
 
-    printf("Code size %h. Data size:  %h", code_size, data_size);
+    printf("Code size %h. Data size %h", code_size, data_size);
     
     uint8_t* data_dest = (uint8_t*)alloc_proc_mem(data_size);
     if (!data_dest) return 0;
@@ -185,19 +179,17 @@ process_t* create_process(void (*func)(), uint64_t code_size, uint64_t func_base
     relocate_code(code_dest, func, code_size, (uint64_t)&data[0], (uint64_t)&data_dest[0], data_size);
     
     printf("Code copied to %h", (uint64_t)code_dest);
-
-    // Set up initial stack for the process
     uint64_t stack_size = 0x1000;
 
     uint64_t stack = (uint64_t)alloc_proc_mem(stack_size);
-    printf("Stack size %h. Start %h", stack_size, stack);
+    printf("Stack size %h. Start %h", stack_size,stack);
     if (!stack) return 0;
 
-    proc->sp = (stack + stack_size); // Stack grows downwards. SP => top of stack
-
+    proc->sp = (stack + stack_size);
+    
     proc->pc = (uint64_t)code_dest;
-    printf("Process allocated with address at %h, stack at %h", proc->pc, proc->sp);
-    proc->spsr = 0xC0; // clean flags
+    printf("Process allocated with address at %h, stack at %h",proc->pc, proc->sp);
+    proc->spsr = 0xC0;
     proc->state = READY;
     proc->id = proc_count++;
     
@@ -231,12 +223,10 @@ which are defined in the linker script for proper memory layout.
 
 __attribute__((section(".rodata.proc1"))) // Read-only data section for process 1
 static const char fmt[] = "Process %i";
-
 __attribute__((section(".data.proc1"))) // Writable data section for process 1
 static uint64_t j = 12;
 
 __attribute__((section(".text.proc1"))) // Code section for process 1
-
 void proc_func() {
     /*
     This is a sample process function that runs in user mode (EL0). It demonstrates
@@ -246,18 +236,17 @@ void proc_func() {
     */
     //const char *msg = "hi from EL0\n";
     while (1) {
-        register uint64_t x0 asm("x0") = (uint64_t)&fmt; // this is the format string for printing
-        register uint64_t x1 asm("x1") = (uint64_t)&j; // first argument: process ID
-        register uint64_t x2 asm("x2") = 1; // syscall print number of arguments
-        register uint64_t x8 asm("x8") = 3; // syscall print format string
+        register uint64_t x0 asm("x0") = (uint64_t)&fmt;
+        register uint64_t x1 asm("x1") = (uint64_t)&j;
+        register uint64_t x2 asm("x2") = 1;
+        register uint64_t x8 asm("x8") = 3;
 
-        asm volatile ( // make the syscall to print
-            "svc #3"                               // Supervisor Call for syscall svc number 3 (print)
-            :                                      // no output
-            : "r"(x0), "r"(x1), "r"(x2), "r"(x8)   // input registers
-            : "memory"                             // clobbered memory
-        );
-
+        // asm volatile(
+        //     "svc #3"
+        //     :
+        //     : "r"(x0), "r"(x1), "r"(x2), "r"(x8)
+        //     : "memory"
+        // );
         j++;
     }
 }
@@ -268,7 +257,7 @@ void default_processes(){
     extern uint8_t proc_1_rodata_start;
     extern uint8_t proc_1_rodata_end;
 
-    printf("DATA STARTS AT %h ENDS AT %h", (uint64_t)&proc_1_rodata_start, (uint64_t)&proc_1_rodata_end);
+    printf("DATA STARTS AT %h ENDS AT %h",(uint64_t)&proc_1_rodata_start,(uint64_t)&proc_1_rodata_end);
 
     create_process(proc_func, (uint64_t)&proc_1_end - (uint64_t)&proc_1_start, (uint64_t)&proc_1_start, (void*)&fmt, (uint64_t)&proc_1_rodata_end - (uint64_t)&proc_1_rodata_start);
     create_process(proc_func, (uint64_t)&proc_1_end - (uint64_t)&proc_1_start, (uint64_t)&proc_1_start, (void*)&fmt, (uint64_t)&proc_1_rodata_end - (uint64_t)&proc_1_rodata_start);

@@ -48,7 +48,7 @@ void kernel_main() {
 
     printf("Interrupts enabled");
 
-    mmu_enable_verbose();
+    //mmu_enable_verbose();
     mmu_init();
     printf("MMU Mapped");
 
@@ -63,6 +63,8 @@ void kernel_main() {
     default_processes();
 
     printf("Starting scheduler");
+
+    enable_interrupt();
 
     start_scheduler();
 

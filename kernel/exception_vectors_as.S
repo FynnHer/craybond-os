@@ -10,22 +10,22 @@ exception_vectors:
 .endm
 
     vector_slot sync_el1_handler      // EL1t sync
-    vector_slot irq_el1_asm_handler   // EL1t irq
+    vector_slot irq_el1_asm_handler       // EL1t irq
     vector_slot fiq_el1_handler       // EL1t fiq
     vector_slot error_el1_handler     // EL1t serror
 
     vector_slot sync_el1_handler      // EL1h sync
-    vector_slot irq_el1_asm_handler   // EL1h irq
+    vector_slot irq_el1_asm_handler       // EL1h irq
     vector_slot fiq_el1_handler       // EL1h fiq
     vector_slot error_el1_handler     // EL1h serror
 
     vector_slot sync_el0_handler_c      // EL0_64 sync
-    vector_slot irq_el1_asm_handler   // EL0_64 irq
+    vector_slot irq_el1_asm_handler       // EL0_64 irq
     vector_slot fiq_el1_handler       // EL0_64 fiq
     vector_slot error_el1_handler     // EL0_64 serror
 
     vector_slot sync_el0_handler_c      // EL0_32 sync
-    vector_slot irq_el1_asm_handler   // EL0_32 irq
+    vector_slot irq_el1_asm_handler       // EL0_32 irq
     vector_slot fiq_el1_handler       // EL0_32 fiq
     vector_slot error_el1_handler     // EL0_32 serror
 
@@ -40,4 +40,4 @@ irq_el1_asm_handler:
 
     bl irq_el1_handler
 
-    eret; //prob wont be called but if there are 0 processes, we want to return
+    eret;//Probably won't be called, but if we have 0 processes, we wanna return to where we were before

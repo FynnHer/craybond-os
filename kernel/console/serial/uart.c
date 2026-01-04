@@ -5,19 +5,19 @@ This file contains functions to initialize and use the UART for serial communica
 By writing to and reading from specific memory-mapped registers,
 we can send and receive data over a serial interface.
 */
-#include "uart.h"
 #include "console/serial/uart.h"
 #include "ram_e.h"
+#include "gic.h"
 
-#define UART0_DR   (UART0_BASE + 0x00)  
+#define UART0_DR   (UART0_BASE + 0x00)
 #define UART0_FR   (UART0_BASE + 0x18)
 #define UART0_IBRD (UART0_BASE + 0x24)
 #define UART0_FBRD (UART0_BASE + 0x28)
 #define UART0_LCRH (UART0_BASE + 0x2C)
 #define UART0_CR   (UART0_BASE + 0x30)
 
-uint64_t get_uart_base() {
-  return UART0_BASE;
+uint64_t get_uart_base(){
+    return UART0_BASE;
 }
 
 void enable_uart() {
@@ -44,15 +44,15 @@ void uart_raw_putc(const char c) {
 }
 
 void uart_putc(const char c) {
-  asm volatile ("msr daifset, #2"); // Disable IRQs
+  disable_interrupt();
   uart_raw_putc(c);
-  asm volatile ("msr daifclr, #2"); // Enable IRQs
+  enable_interrupt();
 }
 
 void uart_puts(const char *s){
-  asm volatile ("msr daifset, #2"); // Disable IRQs
+  disable_interrupt();
   uart_raw_puts(s);
-  asm volatile ("msr daifclr, #2"); // Enable IRQs
+  enable_interrupt();
 }
 
 void uart_raw_puts(const char *s) {
@@ -63,17 +63,17 @@ void uart_raw_puts(const char *s) {
 }
 
 void uart_puthex(uint64_t value) {
-  asm volatile ("msr daifset, #2"); // Disable IRQs
-    const char hex_chars[] = "0123456789ABCDEF";
-    bool started = false;
-    uart_raw_putc('0');
-    uart_raw_putc('x');
-    for (int i = 60; i >= 0; i -= 4) {
-        char curr_char = hex_chars[(value >> i) & 0xF];
-        if (started || curr_char != '0' || i == 0) {
-            started = true;
-            uart_putc(curr_char);
-        }
+  disable_interrupt();
+  const char hex_chars[] = "0123456789ABCDEF";
+  bool started = false;
+  uart_raw_putc('0');
+  uart_raw_putc('x');
+  for (int i = 60; i >= 0; i -= 4) {
+    char curr_char = hex_chars[(value >> i) & 0xF];
+    if (started || curr_char != '0' || i == 0) {
+      started = true;
+      uart_raw_putc(curr_char);
     }
-    asm volatile ("msr daifclr, #2"); // Enable IRQs
+  }
+  enable_interrupt();
 }

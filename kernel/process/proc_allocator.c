@@ -17,7 +17,7 @@ The allocators ensure 4KB alignment and check for overflow conditions.
 #define BOOT_PUD_ATTR PD_TABLE
 
 #define PAGE_TABLE_ENTRIES 512
-#define PAGE_SIZE 4096 // 4KB
+#define PAGE_SIZE 4096
 
 uint64_t mem_table_l1[PAGE_TABLE_ENTRIES] __attribute__((aligned(PAGE_SIZE)));
 
@@ -29,7 +29,7 @@ void proc_map_2mb(uint64_t va, uint64_t pa) {
     given virtual address (va) to the physical address (pa) with the specified attributes.
     Example usage: proc_map_2mb(0x400000, 0x400000, MAIR_IDX_NORMAL) would map 2MB of normal memory.
     */
-   uint64_t l1_index = (va >> 39) & 0x1FF;
+    uint64_t l1_index = (va >> 39) & 0x1FF;
     uint64_t l2_index = (va >> 30) & 0x1FF;
     uint64_t l3_index = (va >> 21) & 0x1FF;
 
