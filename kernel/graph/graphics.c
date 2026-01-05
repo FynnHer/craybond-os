@@ -147,7 +147,7 @@ void gpu_draw_line(point p0, point p1, uint32_t color){
         break;
     }
 }
-void gpu_draw_char(point p, char c, uint32_t color){
+void gpu_draw_char(point p, char c, int scale, uint32_t color){
     /*
     This function draws a character at the specified point with the given color.
     It calls the appropriate draw_char function based on the initialized GPU driver.
@@ -161,7 +161,7 @@ void gpu_draw_char(point p, char c, uint32_t color){
             vgp_draw_char(p.x,p.y,c,color);
         break;
         case RAMFB:
-            rfb_draw_char(p.x,p.y,c,color);
+            rfb_draw_char(p.x,p.y,c,scale,color);
         break;
         default:
         break;
