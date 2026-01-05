@@ -35,6 +35,7 @@ void boot_draw_name(point screen_middle, int xoffset, int yoffset) {
     for (int i = 0; i < str_length; i++) {
         gpu_draw_char((point){xo + (i * char_size), yo}, s.data[i], 3, 0xFFFFFF);
     }
+    temp_free(s.data, 256);
 }
 
 __attribute__((section(".text.kbootscreen"))) // Code section for bootscreen process
@@ -86,7 +87,6 @@ void bootscreen() {
     */
    disable_visual();
    while (1) {
-        free_temp();
         gpu_clear(0);
         size screen_size = gpu_get_screen_size();
         point screen_middle = {screen_size.width / 2, screen_size.height / 2};
@@ -126,14 +126,10 @@ void bootscreen() {
                         point brush_pixel = {current_point.x + bx, current_point.y + by};
                         // draw using a crayon like color (orange-red: 0xFF4500)
                         gpu_draw_pixel(brush_pixel, 0xFF4500);
-                        for (int k = 0; k < 300000; k++) {
-                            // simple delay loop to simulate drawing time
-                        }
                     }
                     boot_draw_name(screen_middle,0,padding + (screen_size.height / 3) + 10);
                 }
-                randomNumber += 1;
-                randomNumber %= 100;
+
             }
             // Apply fixed pint rotation matrix for next point
             // rotate cw: x' = x*cos + y*sin, y' = -x*sin + y*cos
@@ -142,13 +138,16 @@ void bootscreen() {
             x = next_x;
             y = next_y;
 
+            randomNumber += 1;
+            randomNumber %= 100;
+
             // animation delay to show the "forming" of the crayon C
-            for (int k = 0; k > 50000000; k++) {
+            for (int k = 0; k > 500000; k++) {
                 // simple delay loop
             }
         }
         // pause with the finished drawing before restarting
-        for (int k = 0; k < 1000000000; k++) {}
+        for (int k = 0; k < 100000000000; k++) {}
    }
 }
 

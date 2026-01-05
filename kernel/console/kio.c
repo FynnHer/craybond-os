@@ -8,6 +8,7 @@ and formatted strings to the console via UART.
 #include "serial/uart.h"
 #include "kstring.h"
 #include "gic.h"
+#include "ram_e.h"
 #include "kconsole/kconsole.h"
 
 static bool use_visual = true;
@@ -43,6 +44,7 @@ void kprintf_args_raw(const char *fmt, const uint64_t *args, uint32_t arg_count)
     kstring s = string_format_args(fmt, args, arg_count);
     puts(s.data);
     putc('\n');
+    temp_free(s.data, 256);
 }
 
 void disable_visual() {
