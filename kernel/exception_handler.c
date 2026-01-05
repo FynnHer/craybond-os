@@ -12,6 +12,8 @@ FIQ stands for Fast Interrupt Request.
 #include "mmu.h"
 #include "graph/graphics.h"
 
+static bool panic_triggered = false;
+
 void set_exception_vectors(){
     /*
     This function sets the exception vector base address by writing to the VBAR_EL1 system register.
@@ -51,7 +53,20 @@ void fiq_el1_handler(){ handle_exception("FIQ EXCEPTION\n"); }
 
 void error_el1_handler(){ handle_exception("ERROR EXCEPTION\n"); }
 
+void draw_panic_screen(kstring s) {
+    gpu_clear(0x0000FF);
+    uint32_t scale = 3;
+    uint32_t size = gpu_get_char_size(scale);
+    gpu_draw_string(s, (point){20,20}, scale, 0xFFFFFFFF);
+}
+
 void panic(const char* panic_msg) {
+    bool old_panic_triggered = panic_triggered;
+    panic_triggered = true;
+    if (!old_panic_triggered) {
+        kstring s = string_format("CRAYON NOT CRAYING\n%s\nSystem Halted", (uint64_t)panic_msg);
+        draw_panic_screen(s);
+    }
     uart_raw_puts("*** CRAYON DOESN'T DRAW ANYMORE ***");
     uart_raw_puts(panic_msg);
     uart_raw_puts("System Halted");
@@ -59,11 +74,12 @@ void panic(const char* panic_msg) {
 }
 
 void panic_with_info(const char* msg, uint64_t info) {
-    gpu_clear(0x0000FF);
-    uint32_t scale = 3;
-    uint32_t size = gpu_get_char_size(scale);
-    kstring s = string_format("CRAYON NOT CRAYING\n%s\nError code: %h\nSystem Halted", (uint64_t)msg, info);
-    gpu_draw_string(s, (point){10,10}, scale, 0xFFFFFFFF);
+    bool old_panic_triggered = panic_triggered;
+    panic_triggered = true;
+    if (!old_panic_triggered) {
+        kstring s = string_format("CRAYON NOT CRAYING\n%s\nError code: %h\nSystem Halted", (uint64_t)msg, info);
+        draw_panic_screen(s);
+    }
     uart_raw_puts("*** CRAYON DOESN'T DRAW ANYMORE ***");
     uart_raw_puts(msg);
     uart_raw_putc('\n');
