@@ -34,17 +34,6 @@ uint32_t height;
 uint32_t bpp;
 uint32_t stride;
 
-uint32_t fix_rgb(uint32_t color) {
-    /*
-    This function converts a color from RGB format to XRGB format.
-    It rearranges the color components to match the XRGB8888 pixel format.
-    Example usage: uint32_t xrgb_color = fix_rgb(0xFF0000); // Converts red color to XRGB format.
-    */
-    return (color & 0xFF0000) >> 16 
-         | (color & 0x00FF00)       
-         | (color & 0x0000FF) << 16;
-}
-
 void rfb_clear(uint32_t color){
     /*
     This function clears the entire framebuffer by filling it with a specified color.
@@ -54,7 +43,7 @@ void rfb_clear(uint32_t color){
     volatile uint32_t* fb = (volatile uint32_t*)fb_ptr;
     uint32_t pixels = width * height;
     for (uint32_t i = 0; i < pixels; i++) {
-        fb[i] = fix_rgb(color);
+        fb[i] = color;
     }
 }
 
