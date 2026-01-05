@@ -168,7 +168,7 @@ void gpu_draw_char(point p, char c, uint32_t scale, uint32_t color){
     }
 }
 
-void gpu_draw_string(kstring s, point p, uint32_t scale) {
+void gpu_draw_string(kstring s, point p, uint32_t scale, uint32_t color) {
     /*
     This function draws a string at the specified point with the given scale.
     It calls the appropriate draw_string function based on the initialized GPU driver.
@@ -179,7 +179,7 @@ void gpu_draw_string(kstring s, point p, uint32_t scale) {
         return;
     switch (chosen_GPU) {
         case RAMFB:
-            rfb_draw_string(s, p.x, p.y, scale);
+            rfb_draw_string(s, p.x, p.y, scale, color);
         break;
         default:
         break;

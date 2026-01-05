@@ -10,6 +10,7 @@ to the framebuffer in a loop with a delay.
 #include "graph/graphics.h"
 #include "kstring.h"
 #include "ram_e.h"
+#include "exception_handler.h"
 
 int abs(int n) {
     return n < 0 ? -n : n;
@@ -26,15 +27,13 @@ void boot_draw_name(point screen_middle, int xoffset, int yoffset) {
     const char* name = "Craybond OS - Crayons are for losers - %i%";
     uint64_t *i = &randomNumber;
     kstring s = string_format_args(name, i, 1);
-    int char_size = 20;
-    int str_length = s.length;
-    int mid_offset = (str_length/2) * char_size;
+    int scale = 2;
+    uint32_t char_size = gpu_get_char_size(scale);
+    int mid_offset = (s.length/2) * char_size;
     int xo = screen_middle.x - mid_offset + xoffset;
     int yo = screen_middle.y + yoffset;
-    gpu_fill_rect((rect){xo, yo, char_size * str_length, char_size}, 0x0);
-    for (int i = 0; i < str_length; i++) {
-        gpu_draw_char((point){xo + (i * char_size), yo}, s.data[i], 3, 0xFFFFFF);
-    }
+    gpu_fill_rect((rect){xo,yo, char_size * s.length, char_size}, 0x0);
+    gpu_draw_string(s, (point){xo, yo}, scale, 0xFFFFFF);
     temp_free(s.data, 256);
 }
 
@@ -139,7 +138,10 @@ void bootscreen() {
             y = next_y;
 
             randomNumber += 1;
-            randomNumber %= 100;
+            // randomNumber %= 100;
+            if (randomNumber > 100) {
+                panic_with_info("Failed to load", 0x12345);
+            }
 
             // animation delay to show the "forming" of the crayon C
             for (int k = 0; k > 500000; k++) {
