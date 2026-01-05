@@ -68,4 +68,5 @@ process_t* init_process() {
 
     process_t* proc = &processes[proc_count];
     proc->id = proc_count++;
+    return proc;
 }
