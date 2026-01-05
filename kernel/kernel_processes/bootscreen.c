@@ -8,6 +8,8 @@ to the framebuffer in a loop with a delay.
 #include "process/kprocess_loader.h"
 #include "console/kio.h"
 #include "graph/graphics.h"
+#include "string.h"
+#include "ram_e.h"
 
 int abs(int n) {
     return n < 0 ? -n : n;
@@ -17,16 +19,22 @@ int lerp(int step, int a, int b) {
     return (a + step * (a < b ? 1 : -1));
 }
 
+static uint64_t randomNumber = 0;
+
 __attribute__((section(".text.kbootscreen")))
 void boot_draw_name(point screen_middle, int xoffset, int yoffset) {
-    const char* name = "Craybond OS - Crayons are for losers";
+    const char* name = "Craybond OS - Crayons are for losers - %i%";
+    uint64_t *i = &randomNumber;
+    kstring s = string_format_args(name, i, 1);
     int char_size = 20;
-    int str_length = 0;
-    while (name[str_length] != '\0') { str_length++; }
+    int str_length = s.length;
+    // while (name[str_length] != '\0') { str_length++; } --- IGNORE ---
     int mid_offset = (str_length/2) * char_size;
+    int xo = screen_middle.x - mid_offset + xoffset;
+    int yo = screen_middle.y + yoffset;
+    gpu_fill_rect((rect){xo, yo, char_size * str_length, char_size}, 0x0);
     for (int i = 0; i < str_length; i++) {
-        gpu_draw_char((point){screen_middle.x - mid_offset + (i * char_size) + xoffset,
-                                screen_middle.y + yoffset}, name[i], 3, 0xFFFFFF);
+        gpu_draw_char((point){xo + (i * char_size), yo}, s.data[i], 3, 0xFFFFFF);
     }
 }
 
@@ -79,6 +87,7 @@ void bootscreen() {
     */
    disable_visual();
    while (1) {
+        free_temp();
         gpu_clear(0);
         size screen_size = gpu_get_screen_size();
         point screen_middle = {screen_size.width / 2, screen_size.height / 2};
@@ -86,7 +95,6 @@ void bootscreen() {
         // preserve original name drawing position
         int sizes_height = screen_size.height / 3;
         int padding = 10;
-        boot_draw_name(screen_middle, 0, padding + sizes_height + 10);
 
         // --- Crayon C Drawing Logic ---
 
@@ -123,7 +131,10 @@ void bootscreen() {
                             // simple delay loop to simulate drawing time
                         }
                     }
+                    boot_draw_name(screen_middle,0,padding + (screen_size.height / 3) + 10);
                 }
+                randomNumber += 1;
+                randomNumber %= 100;
             }
             // Apply fixed pint rotation matrix for next point
             // rotate cw: x' = x*cos + y*sin, y' = -x*sin + y*cos
