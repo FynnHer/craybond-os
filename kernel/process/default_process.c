@@ -12,9 +12,7 @@ static uint64_t j = 1; // Counter variable for process 1
 __attribute__((section(".text.proc1"))) // Code section for process 1
 void proc_func() {
     while (1) {
-        // printf(fmt, j);
-        printf_args(fmt, (uint64_t*)&j, 1);
-        j++;
+        printf(fmt, j++);
     }
 }
 
