@@ -59,10 +59,10 @@ void panic(const char* panic_msg) {
 }
 
 void panic_with_info(const char* msg, uint64_t info) {
-    gpu_clear(0x4AA7D9); // light red background to indicate panic
+    gpu_clear(0x0000FF);
     uint32_t scale = 3;
     uint32_t size = gpu_get_char_size(scale);
-    kstring s = string_format("CRAYON NOT CRAYING%s\nError code: %h\nSystem Halted", (uint64_t)msg, info);
+    kstring s = string_format("CRAYON NOT CRAYING\n%s\nError code: %h\nSystem Halted", (uint64_t)msg, info);
     gpu_draw_string(s, (point){10,10}, scale, 0xFFFFFFFF);
     uart_raw_puts("*** CRAYON DOESN'T DRAW ANYMORE ***");
     uart_raw_puts(msg);
