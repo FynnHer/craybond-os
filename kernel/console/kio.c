@@ -6,7 +6,7 @@ and formatted strings to the console via UART.
 */
 #include "kio.h"
 #include "serial/uart.h"
-#include "string.h"
+#include "kstring.h"
 #include "gic.h"
 #include "kconsole/kconsole.h"
 

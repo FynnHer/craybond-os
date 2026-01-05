@@ -113,7 +113,7 @@ void mmu_map_4kb(uint64_t va, uint64_t pa, uint64_t attr_index, int level) { // 
     }
     uint64_t attr = ((level == 1) << 54) | (0 << 53) | PD_ACCESS | (0b11 << 8) | (permission << 6) | (attr_index << 2) | 0b11;
     if (mmu_verbose)
-        kprintf_raw("Mapping 4kb memory $h at [%i][%i][%i][%i] for EL%i = %h permission: %i", va, l1_index, l2_index, l3_index, l4_index, level, attr, permission);
+        kprintf_raw("Mapping 4kb memory %h at [%i][%i][%i][%i] for EL%i = %h permission: %i", va, l1_index, l2_index, l3_index, l4_index, level, attr, permission);
 
     l4[l4_index] = (pa & 0xFFFFFFFFF000ULL) | attr; // Set L4 entry to map 4KB page
 }

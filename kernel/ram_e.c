@@ -69,16 +69,20 @@ extern uint64_t shared_end; // defined in linker script
 uint64_t next_free_temp_memory = (uint64_t)&heap_bottom; // Start of temporary memory, implements a bump pointer allocator
 uint64_t next_free_perm_memory = (uint64_t)temp_start; // Start of permanent memory, implements a bump pointer allocator
 
+// Well need to use a table indicating which sections of memory are available
+// so we can talloc and free dynamically
+
 uint64_t talloc(uint64_t size) {
     /*
     This function allocates temporary memory of the given size using a bump pointer allocator.
     It aligns the allocation to a 4KB boundary and checks for overflow against permanent memory.
     */
+   uint64_t aligned_size = (size + 0xFFF) & ~0xFFF;
     next_free_temp_memory = (next_free_temp_memory + 0xFFF) & ~0xFFF;
-    if (next_free_temp_memory + size > next_free_perm_memory)
+    if (next_free_temp_memory + aligned_size > next_free_perm_memory)
         panic_with_info(">>> Temporary allocator overflow", next_free_temp_memory);
     uint64_t result = next_free_temp_memory;
-    next_free_temp_memory += (size + 0xFFF) & ~0xFFF;
+    next_free_temp_memory += aligned_size;
     return result;
 }
 
@@ -87,11 +91,12 @@ uint64_t palloc(uint64_t size) {
     This function allocates permanent memory of the given size using a bump pointer allocator.
     It aligns the allocation to a 4KB boundary and checks for overflow against the heap limit.
     */
+    uint64_t aligned_size = (size + 0xFFF) & ~0xFFF;
     next_free_perm_memory = (next_free_perm_memory + 0xFFF) & ~0xFFF;
-    if (next_free_perm_memory > (uint64_t)&heap_limit)
+    if (next_free_perm_memory + aligned_size > (uint64_t)&heap_limit)
         panic_with_info(">>> Permanent allocator overflow", (uint64_t)&heap_limit);
     uint64_t result = next_free_perm_memory;
-    next_free_perm_memory += (size + 0xFFF) & ~0xFFF;
+    next_free_perm_memory += aligned_size;
     return result;
 }
 

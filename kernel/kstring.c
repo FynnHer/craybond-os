@@ -4,7 +4,7 @@ This file provides basic string manipulation functions for the kernel. It includ
 functions to create strings from literals, characters, and hexadecimal values.
 It also provides string comparison and formatted string creation capabilities.
 */
-#include "string.h"
+#include "kstring.h"
 #include "ram_e.h"
 
 static uint32_t compute_length(const char *s, uint32_t max_length) {

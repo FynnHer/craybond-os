@@ -9,7 +9,7 @@ and provides functions to read and write PCI configuration registers.
 #include "ram_e.h"
 #include "dma.h"
 #include "fw/fw_cfg.h"
-#include "string.h"
+#include "kstring.h"
 
 #define PCI_BUS_MAX 256 // 0-255
 #define PCI_SLOT_MAX 32 // 0-31

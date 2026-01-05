@@ -8,7 +8,7 @@ to the framebuffer in a loop with a delay.
 #include "process/kprocess_loader.h"
 #include "console/kio.h"
 #include "graph/graphics.h"
-#include "string.h"
+#include "kstring.h"
 #include "ram_e.h"
 
 int abs(int n) {
@@ -28,7 +28,6 @@ void boot_draw_name(point screen_middle, int xoffset, int yoffset) {
     kstring s = string_format_args(name, i, 1);
     int char_size = 20;
     int str_length = s.length;
-    // while (name[str_length] != '\0') { str_length++; } --- IGNORE ---
     int mid_offset = (str_length/2) * char_size;
     int xo = screen_middle.x - mid_offset + xoffset;
     int yo = screen_middle.y + yoffset;
