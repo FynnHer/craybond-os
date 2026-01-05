@@ -101,7 +101,7 @@ void proc_allocator_init() {
     }
 }
 
-void* alloc_proc_mem(uint64_t size) {
+void* alloc_proc_mem(uint64_t size, bool kernel) {
     /*
     This function allocates memory for a process using the permanent memory allocator.
     It allocates the requested size and returns a pointer to the allocated memory.
@@ -137,7 +137,7 @@ void* alloc_proc_mem(uint64_t size) {
         if (free) {
             for (uint64_t offset = 0; offset < size; offset += PAGE_SIZE){
                 proc_map_4kb(va + offset, va + offset);
-                register_proc_memory(va + offset, va + offset);
+                register_proc_memory(va + offset, va + offset, kernel);
             }
             return (void*)va;
         }
