@@ -8,6 +8,8 @@ kernel/dtb.c
 */
 #include "dtb.h"
 #include "console/kio.h"
+#include "kstring.h"
+#include "ram_e.h"
 
 #define DTB_ADDR 0x40000000UL
 #define FDT_MAGIC 0xD00DFEED
@@ -47,19 +49,10 @@ static inline uint64_t bswap64(uint64_t x) {
     return ((uint64_t)bswap32(x & 0xFFFFFFFF) << 32) | bswap32(x >> 32);
 }
 
-static int str_eq(const char *a, const char *b) {
-    /*
-    This function compares two null-terminated strings for equality.
-    It returns 1 (true) if the strings are equal, and 0 (false) otherwise.
-    */
-    while (*a && *b) {
-        if (*a != *b) return 0;
-        a++; b++;
-    }
-    return *a == 0 && *b == 0;
-}
+typedef int (*dtb_node_handler)(const char *name, const char *propname,
+const void *prop, uint32_t len, dtb_match_t *out);
 
-int get_memory_region(uint64_t *out_base, uint64_t *out_size) {
+int dtb_scan(const char *search_name, dtb_node_handler handler, dtb_match_t *match) {
     /*
     Gets the base address and size of the memory region from the DTB.
     It parses the DTB structure to find the "mem" node and retrieves
@@ -71,7 +64,8 @@ int get_memory_region(uint64_t *out_base, uint64_t *out_size) {
 
     uint32_t *p = (uint32_t *)(DTB_ADDR + bswap32(hdr->off_dt_struct)); // Pointer to the structure block
     const char *string = (const char *)(DTB_ADDR + bswap32(hdr->off_dt_strings)); // Pointer to the strings block
-    int in_mem = 0; // Flag to indicate if we are inside the "mem" node
+    int depth = 0;
+    bool active = 0;
 
     while (1) {
         /* 
@@ -79,33 +73,97 @@ int get_memory_region(uint64_t *out_base, uint64_t *out_size) {
         It reads tokens and processes nodes and properties accordingly.
         */
         uint32_t token = bswap32(*p++); // Read the next token
-        if (token == FDT_END) {
-            break;
-        }
+        if (token == FDT_END) break;
         if (token == FDT_BEGIN_NODE) {
             const char *name = (const char *)p;
             uint32_t skip = 0;
             while (((char *)p)[skip]) skip++;
-            in_mem = (name[0] == 'm' && name[1] == 'e');
             skip = (skip + 4) & ~3;
             p += skip / 4;
-        } else if (token == FDT_PROP && in_mem) {
+            depth++;
+            active = strcont(name, search_name);
+        } else if (token == FDT_PROP && active) {
             uint32_t len = bswap32(*p++);
             uint32_t nameoff = bswap32(*p++);
             const char *propname = string + nameoff;
-            if (str_eq(propname, "reg") && len >= 16) {
-                uint32_t hi_base = bswap32(p[0]);
-                uint32_t lo_base = bswap32(p[1]);
-                uint32_t hi_size = bswap32(p[2]);
-                uint32_t lo_size = bswap32(p[3]);
-                *out_base = ((uint64_t)hi_base << 32) | lo_base;
-                *out_size = ((uint64_t)hi_size << 32) | lo_size;
-                return 1;
-            }
+            const void *prop = p;
+            if (handler(NULL, propname, prop, len, match)) return 1;
             p += (len + 3) / 4;
         } else if (token == FDT_END_NODE) {
-            in_mem = 0;
+            depth--;
+            active = 0;
         }
     }
     return 0;
+}
+
+int handle_mem_node(const char *name, const char *propname, const void *prop,
+    uint32_t len, dtb_match_t *match) {
+        /*
+        This function handles the "mem" node in the DTB. It looks for the "reg" property
+        and extracts the base address and size of the memory region.
+        Returns 1 if the "reg" property is found and processed, 0 otherwise.
+        */
+        if (strcmp(propname, "reg") == 0 && len >= 16) {
+            uint32_t *p = (uint32_t *)prop;
+            match->reg_base = ((uint64_t)bswap32(p[0]) << 32) | bswap32(p[1]);
+            match->reg_size = ((uint64_t)bswap32(p[2]) << 32) | bswap32(p[3]);
+            return 1;
+        }
+        return 0;
+}
+
+int get_memory_region(uint64_t *out_base, uint64_t *out_size) {
+    /*
+    This function retrieves the memory region information from the DTB.
+    It scans the DTB for the "memory" node and extracts the "reg" property.
+    The base address and size of the memory region are returned via output parameters.
+    Returns 1 on success, 0 on failure.
+    */
+   dtb_match_t match = {0};
+   if (dtb_scan("memory", handle_mem_node, &match)) {
+        *out_base = match.reg_base;
+        *out_size = match.reg_size;
+        return 1;
+   }
+   return 0;
+}
+
+int handle_virtio_node(const char *name, const char *propname, 
+    const void *prop, uint32_t len, dtb_match_t *match) {
+        /*
+        This function handles the "virtio" node in the DTB. It looks for the "reg" property
+        and extracts the base address of the virtio device.
+        Returns 1 if the "reg" property is found and processed, 0 otherwise.
+        */
+        if (strcmp(propname, "compatible") == 0 && len >= 12 
+            && memcmp(prop, "virtio,mmio", 11) == 0) {
+                match->found = 1;
+        } else if (match->found && strcmp(propname, "reg") == 0 && len >= 16) {
+            uint32_t *p = (uint32_t *)prop;
+            match->reg_base = ((uint64_t)bswap32(p[0]) << 32) | bswap32(p[1]);
+            match->reg_size = ((uint64_t)bswap32(p[2]) << 32) | bswap32(p[3]);
+        } else if (match->found && strcmp(propname, "interrupts") == 0 && len >= 4) {
+            match->irq = bswap32(*(uint32_t *)prop);
+            return 1;
+        }
+        return 0;
+}
+
+int find_virtio_blk(uint64_t *out_base, uint64_t *out_size, uint32_t *out_irq) {
+    /*
+    This function searches for the virtio block device in the DTB.
+    It scans the DTB for the "virtio" node and extracts the base address,
+    size, and IRQ of the device.
+    The information is returned via output parameters.
+    Returns 1 on success, 0 on failure.
+    */
+   dtb_match_t match = {0};
+   if (dtb_scan("virtio", handle_virtio_node, &match)) {
+        *out_base = match.reg_base;
+        *out_size = match.reg_size;
+        *out_irq = match.irq;
+        return 1;
+   }
+   return 0;
 }

@@ -89,11 +89,7 @@ bool string_equals(kstring a, kstring b) {
     It returns 1 (true) if the strings are equal, and 0 (false) otherwise.
     Example usage: string_equals(string_l("Hello"), string_l("Hello")) would return true.
     */
-    if (a.length != b.length) return 0;
-    for (uint32_t i = 0; i < a.length; i++) {
-        if (a.data[i] != b.data[i]) return 0;
-    }
-    return 1;
+    return strcmp(a.data,b.data) == 0;
 }
 
 kstring string_format_args(const char *fmt, const uint64_t *args, uint32_t arg_count) {
@@ -158,4 +154,34 @@ kstring string_format_args(const char *fmt, const uint64_t *args, uint32_t arg_c
 
     buf[len] = 0;
     return (kstring){.data = buf, .length = len};
+}
+
+bool strcmp(const char *a, const char *b) {
+    /*
+    This function compares two null-terminated strings for equality.
+    It returns 1 (true) if the strings are equal, and 0 (false) otherwise.
+    Example usage: strcmp("Hello", "Hello") would return true.
+    */
+   while (*a && *b) {
+    if (*a != *b) return (unsigned char)*a - (unsigned char)*b;
+    a++; b++;
+   }
+   return (unsigned char)*a - (unsigned char)*b;
+}
+
+bool strcont(const char *a, const char *b) {
+    /*
+    This function checks if string b is contained within string a.
+    It returns 1 (true) if b is found in a, and 0 (false) otherwise.
+    Example usage: strcont("Hello, World!", "World") would return true.
+    */
+    while (*a) {
+        const char *p = a, *q = b;
+        while (*p && *q && *p == *q) {
+            p++; q++;
+        }
+        if (*q == 0) return 1;
+        a++;
+    }
+    return 0;
 }

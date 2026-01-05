@@ -12,11 +12,11 @@ to allocate memory sequentially from predefined regions.
 #include "dtb.h"
 #include "console/serial/uart.h"
 
-static uint64_t total_ram_size; // in bytes
-static uint64_t total_ram_start; // start address of total RAM
-static uint64_t calculated_ram_size; // in bytes
-static uint64_t calculated_ram_start; // start address of calculated RAM
-static uint64_t calculated_ram_end; // end address of calculated RAM
+static uint64_t total_ram_size = 0; // in bytes
+static uint64_t total_ram_start = 0; // start address of total RAM
+static uint64_t calculated_ram_size = 0; // in bytes
+static uint64_t calculated_ram_start = 0; // start address of calculated RAM
+static uint64_t calculated_ram_end = 0; // end address of calculated RAM
 
 /*
 Free spaces in temporary memory allocator are tracked using a linked list of FreeBlock structures.
@@ -68,6 +68,20 @@ void write(uint64_t addr, uint64_t value) {
 
 uint64_t read(uint64_t addr) {
     return read64(addr);
+}
+
+int memcmp(const void *s1, const void *s2, unsigned long n) {
+    /*
+    This function compares two memory blocks byte by byte for a given length n.
+    It returns 0 if the blocks are equal, a negative value if the first block
+    is less than the second, and a positive value if the first block is greater.
+    */
+    const unsigned char *a = s1;
+    const unsigned char *b = s2;
+    for (unsigned long i = 0; i < n; i++) {
+        if (a[i] != b[i]) return a[i] - b[i];
+    }
+    return 0;
 }
 
 #define temp_start (uint64_t)&heap_bottom + 0x500000 // 5 MB after heap bottom

@@ -16,6 +16,7 @@ interrupts, timer, and memory management unit (MMU). It serves as the entry poin
 #include "gic.h"
 #include "process/scheduler.h"
 #include "default_process.h"
+#include "filesystem/disk.h"
 #include "kernel_processes/bootscreen.h"
 
 void kernel_main() {
@@ -46,9 +47,7 @@ void kernel_main() {
 
     kprintf("Interrupts init");
 
-    kprintf("Interrupts enabled");
-
-    mmu_enable_verbose();
+    // mmu_enable_verbose();
     mmu_init();
     kprintf("MMU Mapped");
 
@@ -57,6 +56,9 @@ void kernel_main() {
     kprintf("Preparing user memory...");
 
     kprintf("There's %h memory for user processes", get_total_user_ram());
+
+    kprintf("Initializing disk...");
+    // init_disk();
 
     kprintf("Starting default process");
 
