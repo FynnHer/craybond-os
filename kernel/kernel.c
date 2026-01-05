@@ -63,8 +63,6 @@ void kernel_main() {
 
     kprintf("Starting scheduler");
 
-    enable_interrupt();
-
     start_scheduler();
 
     kprintf_raw("Error: Kernel did not activate any process");
