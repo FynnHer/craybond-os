@@ -17,6 +17,19 @@ int lerp(int step, int a, int b) {
     return (a + step * (a < b ? 1 : -1));
 }
 
+__attribute__((section(".text.kbootscreen")))
+void boot_draw_name(point screen_middle, int xoffset, int yoffset) {
+    const char* name = "Craybond OS - Crayons are for losers";
+    int char_size = 10;
+    int str_length = 0;
+    while (name[str_length] != '\0') { str_length++; }
+    int mid_offset = (str_length/2) * char_size;
+    for (int i = 0; i < str_length; i++) {
+        gpu_draw_char((point){screen_middle.x - mid_offset + (i * char_size) + xoffset,
+                                screen_middle.y + yoffset}, name[i], 0xFFFFFF);
+    }
+}
+
 __attribute__((section(".text.kbootscreen"))) // Code section for bootscreen process
 void bootscreen() {
     /*
@@ -25,6 +38,7 @@ void bootscreen() {
     of the screen to create a simple graphical effect. It runs in an infinite loop.
     Example usage: This function is invoked as a kernel process to display the bootscreen.
     */
+   /*
     disable_visual();
     while (1) {
         gpu_clear(0);
@@ -33,6 +47,7 @@ void bootscreen() {
         int sizes[4] = {30, screen_size.width/5, screen_size.height/3, 40};
         int padding = 10;
         int yoffset = 50;
+        boot_draw_name(screen_middle, 0, padding + sizes[2] + 10);
         point current_point = {screen_middle.x-padding-sizes[1], screen_middle.y-padding-yoffset-sizes[0]};
         for (int i = 0; i < 12; i++) {
             int ys = i > 5 ? -1 : 1; // y sign -> if i > 5, go up, else go down
@@ -61,6 +76,70 @@ void bootscreen() {
         }
     }
         while (1) {}
+    */
+   disable_visual();
+   while (1) {
+        gpu_clear(0);
+        size screen_size = gpu_get_screen_size();
+        point screen_middle = {screen_size.width / 2, screen_size.height / 2};
+        
+        // preserve original name drawing position
+        int sizes_height = screen_size.height / 3;
+        int padding = 10;
+        boot_draw_name(screen_middle, 0, padding + sizes_height + 10);
+
+        // --- Crayon C Drawing Logic ---
+
+        int radius = screen_size.height / 4;
+        // Start angle: -45 degrees (Top right)
+        // using fixed point math (scale 1024) to avoid flaoting point math in kernel
+        // start pos realtive to center: x = r*cos(-45), y = r*sin(-45)
+        // cose(-45) ~= 0.707, sin(-45) ~= -0.707
+        // 0.707 * 1024 = 724
+        int x = (radius * 724) / 1024;
+        int y = (radius * -724) / 1024;
+
+        // Rotation step per iteration: approx -1.5 degrees (clockwise movement)
+        // cos(1.5) ~= 0.99966 -> 1023
+        // sin(1.5) ~= 0.02618 -> 27
+        int cos_step = 1023;
+        int sin_step = 27;
+
+        // draw from top right -> top -> left -> bottom -> bottom right
+        // total sweep is ~270 degrees. 270 / 1.5 = 180 steps
+        for (int i = 0; i < 180; i++) {
+            point current_point = {screen_middle.x + x, screen_middle.y + y};
+
+            // draw crayon tip
+            int thickness = 5;
+            for (int bx = -thickness; bx <= thickness; bx++) {
+                for (int by = -thickness; by <= thickness; by++) {
+                    // check if pixel is withing the brush radius
+                    if ((bx * bx + by * by) <= (thickness * thickness)) {
+                        point brush_pixel = {current_point.x + bx, current_point.y + by};
+                        // draw using a crayon like color (orange-red: 0xFF4500)
+                        gpu_draw_pixel(brush_pixel, 0xFF4500);
+                        for (int k = 0; k < 300000; k++) {
+                            // simple delay loop to simulate drawing time
+                        }
+                    }
+                }
+            }
+            // Apply fixed pint rotation matrix for next point
+            // rotate cw: x' = x*cos + y*sin, y' = -x*sin + y*cos
+            int next_x = (x * cos_step + y * sin_step) / 1024;
+            int next_y = (y * cos_step - x * sin_step) / 1024;
+            x = next_x;
+            y = next_y;
+
+            // animation delay to show the "forming" of the crayon C
+            for (int k = 0; k > 50000000; k++) {
+                // simple delay loop
+            }
+        }
+        // pause with the finished drawing before restarting
+        for (int k = 0; k < 1000000000; k++) {}
+   }
 }
 
 void start_bootscreen() {
