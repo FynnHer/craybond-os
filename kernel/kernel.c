@@ -15,7 +15,8 @@ interrupts, timer, and memory management unit (MMU). It serves as the entry poin
 #include "dtb.h"
 #include "gic.h"
 #include "process/scheduler.h"
-#include "kernel_processes/default_process.h"
+#include "default_process.h"
+#include "kernel_processes/bootscreen.h"
 
 void kernel_main() {
 
@@ -59,7 +60,9 @@ void kernel_main() {
 
     kprintf("Starting default process");
 
-    default_processes();
+    // default_processes();
+
+    start_bootscreen();
 
     kprintf("Starting scheduler");
 
