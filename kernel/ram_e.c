@@ -11,6 +11,7 @@ to allocate memory sequentially from predefined regions.
 #include "console/kio.h"
 #include "dtb.h"
 #include "console/serial/uart.h"
+#include "kstring.h"
 
 static uint64_t total_ram_size = 0; // in bytes
 static uint64_t total_ram_start = 0; // start address of total RAM
@@ -82,6 +83,19 @@ int memcmp(const void *s1, const void *s2, unsigned long n) {
         if (a[i] != b[i]) return a[i] - b[i];
     }
     return 0;
+}
+
+void *memset(void *dest, int val, unsigned long count) {
+    /*
+    This function sets a block of memory to a specified value.
+    It fills the first count bytes of the memory area pointed to by dest
+    with the constant byte val.
+    */
+    unsigned char *ptr = dest;
+    while (count--) {
+        *ptr++ = (unsigned char)val;
+    }
+    return dest;
 }
 
 #define temp_start (uint64_t)&heap_bottom + 0x500000 // 5 MB after heap bottom
@@ -193,6 +207,41 @@ uint64_t mem_get_kmem_end(){
     It is defined by the heap_limit symbol from the linker script.
     */
     return (uint64_t)&kcode_end;
+}
+
+int handle_mem_node(const char *name, const char *propname, const void *prop, uint32_t len, dtb_match_t *match) {
+    /*
+    This function handles properties of the "memory" DTB node.
+    It extracts the "reg" property to populate the match structure
+    with the memory region's base address and size.
+    */
+    if (strcmp(propname, "reg") == 0 && len >= 16) {
+        uint32_t *p = (uint32_t *)prop;
+        match->reg_base = ((uint64_t)__builtin_bswap32(p[0]) << 32) | __builtin_bswap32(p[1]);
+        match->reg_size = ((uint64_t)__builtin_bswap32(p[2]) << 32) | __builtin_bswap32(p[3]);
+        
+        return 1;
+    }
+    if (strcmp(propname, "device_type") == 0, strcmp(prop, "memory") == 0) {
+        match->found = true;
+    }
+    return 0;
+}
+
+int get_memory_region(uint64_t *out_base, uint64_t *out_size) {
+    /*
+    This function searches the DTB for a "memory" node
+    and retrieves its base address and size using the
+    handle_mem_node callback.
+    Returns 1 on success, 0 on failure.
+    */
+    dtb_match_t match = {0};
+    if (dtb_scan("memory", handle_mem_node, &match)) {
+        *out_base = match.reg_base;
+        *out_size = match.reg_size;
+        return 1;
+    }
+    return 0;
 }
 
 void calc_ram() {

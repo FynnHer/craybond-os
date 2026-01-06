@@ -33,37 +33,67 @@ struct fdt_header {
     uint32_t size_dt_struct;
 };
 
-static inline uint32_t bswap32(uint32_t x) {
-    /* 
-    Swap byte order of a 32-bit integer.
-    Example: 0xAABBCCDD becomes 0xDDCCBBAA
-    */
-    return __builtin_bswap32(x);
-}
+static struct fdt_header *hdr;
 
-static inline uint64_t bswap64(uint64_t x) {
-        /* 
-    Swap byte order of a 64-bit integer.
-    Example: 0xAABBCCDDEEFF0011 becomes 0x1100FFEEDDCCBBAA
-    */
-    return ((uint64_t)bswap32(x & 0xFFFFFFFF) << 32) | bswap32(x >> 32);
-}
-
-typedef int (*dtb_node_handler)(const char *name, const char *propname,
-const void *prop, uint32_t len, dtb_match_t *out);
-
-int dtb_scan(const char *search_name, dtb_node_handler handler, dtb_match_t *match) {
+bool dtb_get_header() {
     /*
-    Gets the base address and size of the memory region from the DTB.
-    It parses the DTB structure to find the "mem" node and retrieves
-    the "reg" property which contains the memory region information.
-    Returns 1 on success, 0 on failure.
+    Initializes the DTB header pointer.
+    Returns true if the DTB header is valid, false otherwise.
     */
-    struct fdt_header *hdr = (struct fdt_header *)DTB_ADDR; // Point to the DTB header
-    if (bswap32(hdr->magic) != FDT_MAGIC) return 0; // Check for valid DTB magic number
+    if (!hdr)
+        hdr = (struct fdt_header *)DTB_ADDR;
+    if (__builtin_bswap32(hdr->magic) != FDT_MAGIC) return false;
+    return true;
+}
 
-    uint32_t *p = (uint32_t *)(DTB_ADDR + bswap32(hdr->off_dt_struct)); // Pointer to the structure block
-    const char *string = (const char *)(DTB_ADDR + bswap32(hdr->off_dt_strings)); // Pointer to the strings block
+bool dtb_addresses(uint64_t *start, uint64_t *size) {
+    /*
+    This function retrieves the memory region information from the DTB.
+    It parses the DTB structure to find the "memory" node and retrieves
+    the "reg" property which contains the memory region information.
+    Returns true on success, false on failure.
+    */
+   if (!dtb_get_header()) return false;
+   *start = (uint64_t)DTB_ADDR;
+   *size = __builtin_bswap32(hdr->totalsize);
+}
+
+bool dtb_debug_print_all() {
+    /*
+    This function prints all nodes and properties in the DTB for debugging purposes.
+    It iterates through the DTB structure and outputs the names and values of
+    each node and property to the console.
+    Returns true on success, false on failure.
+    */
+    if (!dtb_get_header()) return false;
+
+    uint32_t *p = (uint32_t *)(DTB_ADDR + __builtin_bswap32(hdr->off_dt_struct));
+    const char *strings = (const char *)(DTB_ADDR + __builtin_bswap32(hdr->off_dt_strings));
+
+    while (1) {
+        uint32_t token = __builtin_bswap32(*p++);
+        if (token == FDT_END) break;
+        if (token == FDT_BEGIN_NODE) {
+            const char *name = (const char *)p;
+            uint32_t skip = 0;
+            while (((char *)p)[skip]) skip++;
+            skip = (skip + 4) & ~3;
+            p += skip / 4;
+            kprintf_raw(name);
+        }
+    }
+}
+
+bool dtb_scan(const char *search_name, dtb_node_handler handler, dtb_match_t *match) {
+    /*
+    This function scans the DTB for a specific node by name.
+    It uses a callback handler to process each property of the node.
+    The match structure is used to store results found during the scan.
+    Returns true if the node is found and processed, false otherwise.
+    */
+
+    uint32_t *p = (uint32_t *)(DTB_ADDR + __builtin_bswap32(hdr->off_dt_struct)); // Pointer to the structure block
+    const char *string = (const char *)(DTB_ADDR + __builtin_bswap32(hdr->off_dt_strings)); // Pointer to the strings block
     int depth = 0;
     bool active = 0;
 
@@ -72,7 +102,7 @@ int dtb_scan(const char *search_name, dtb_node_handler handler, dtb_match_t *mat
         While loop to parse the DTB structure block.
         It reads tokens and processes nodes and properties accordingly.
         */
-        uint32_t token = bswap32(*p++); // Read the next token
+        uint32_t token = __builtin_bswap32(*p++); // Read the next token
         if (token == FDT_END) break;
         if (token == FDT_BEGIN_NODE) {
             const char *name = (const char *)p;
@@ -83,87 +113,23 @@ int dtb_scan(const char *search_name, dtb_node_handler handler, dtb_match_t *mat
             depth++;
             active = strcont(name, search_name);
         } else if (token == FDT_PROP && active) {
-            uint32_t len = bswap32(*p++);
-            uint32_t nameoff = bswap32(*p++);
+            uint32_t len = __builtin_bswap32(*p++);
+            uint32_t nameoff = __builtin_bswap32(*p++);
             const char *propname = string + nameoff;
             const void *prop = p;
-            if (handler(NULL, propname, prop, len, match)) return 1;
+            handler(NULL, propname, prop, len, match);
             p += (len + 3) / 4;
         } else if (token == FDT_END_NODE) {
             depth--;
+            if (active && match->found)
+                return true;
             active = 0;
+            match->compatible = 0;
+            match->reg_base = 0;
+            match->reg_size = 0;
+            match->irq = 0;
+            match->found = 0;
         }
     }
-    return 0;
-}
-
-int handle_mem_node(const char *name, const char *propname, const void *prop,
-    uint32_t len, dtb_match_t *match) {
-        /*
-        This function handles the "mem" node in the DTB. It looks for the "reg" property
-        and extracts the base address and size of the memory region.
-        Returns 1 if the "reg" property is found and processed, 0 otherwise.
-        */
-        if (strcmp(propname, "reg") == 0 && len >= 16) {
-            uint32_t *p = (uint32_t *)prop;
-            match->reg_base = ((uint64_t)bswap32(p[0]) << 32) | bswap32(p[1]);
-            match->reg_size = ((uint64_t)bswap32(p[2]) << 32) | bswap32(p[3]);
-            return 1;
-        }
-        return 0;
-}
-
-int get_memory_region(uint64_t *out_base, uint64_t *out_size) {
-    /*
-    This function retrieves the memory region information from the DTB.
-    It scans the DTB for the "memory" node and extracts the "reg" property.
-    The base address and size of the memory region are returned via output parameters.
-    Returns 1 on success, 0 on failure.
-    */
-   dtb_match_t match = {0};
-   if (dtb_scan("memory", handle_mem_node, &match)) {
-        *out_base = match.reg_base;
-        *out_size = match.reg_size;
-        return 1;
-   }
-   return 0;
-}
-
-int handle_virtio_node(const char *name, const char *propname, 
-    const void *prop, uint32_t len, dtb_match_t *match) {
-        /*
-        This function handles the "virtio" node in the DTB. It looks for the "reg" property
-        and extracts the base address of the virtio device.
-        Returns 1 if the "reg" property is found and processed, 0 otherwise.
-        */
-        if (strcmp(propname, "compatible") == 0 && len >= 12 
-            && memcmp(prop, "virtio,mmio", 11) == 0) {
-                match->found = 1;
-        } else if (match->found && strcmp(propname, "reg") == 0 && len >= 16) {
-            uint32_t *p = (uint32_t *)prop;
-            match->reg_base = ((uint64_t)bswap32(p[0]) << 32) | bswap32(p[1]);
-            match->reg_size = ((uint64_t)bswap32(p[2]) << 32) | bswap32(p[3]);
-        } else if (match->found && strcmp(propname, "interrupts") == 0 && len >= 4) {
-            match->irq = bswap32(*(uint32_t *)prop);
-            return 1;
-        }
-        return 0;
-}
-
-int find_virtio_blk(uint64_t *out_base, uint64_t *out_size, uint32_t *out_irq) {
-    /*
-    This function searches for the virtio block device in the DTB.
-    It scans the DTB for the "virtio" node and extracts the base address,
-    size, and IRQ of the device.
-    The information is returned via output parameters.
-    Returns 1 on success, 0 on failure.
-    */
-   dtb_match_t match = {0};
-   if (dtb_scan("virtio", handle_virtio_node, &match)) {
-        *out_base = match.reg_base;
-        *out_size = match.reg_size;
-        *out_irq = match.irq;
-        return 1;
-   }
-   return 0;
+    return false;
 }

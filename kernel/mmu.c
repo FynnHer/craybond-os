@@ -11,6 +11,8 @@ Example attributes include device memory and normal memory.
 #include "ram_e.h"
 #include "console/kio.h"
 #include "gic.h"
+#include "dtb.h"
+#include "filesystem/disk.h"
 
 #define MAIR_DEVICE_nGnRnE 0b00000000 // Device-nGnRnE is 0b00000000 | nGnRnE is "non-Gathering, non-Reordering, no Early write acknowledgment"
 #define MAIR_NORMAL_NOCACHE 0b01000100 // Normal memory, Non-cacheable is 0b01000100
@@ -131,9 +133,9 @@ void mmu_init() {
         page_table_l1[i] = 0;
     }
 
-    uint64_t start = mem_get_kmem_start();
-    uint64_t end = mem_get_kmem_end();
-    for (uint64_t addr = start; addr <= end; addr += GRANULE_2MB)
+    uint64_t kstart = mem_get_kmem_start();
+    uint64_t kend = mem_get_kmem_end();
+    for (uint64_t addr = kstart; addr <= kend; addr += GRANULE_2MB)
         mmu_map_2mb(addr, addr, MAIR_IDX_NORMAL); // Map kernel memory as normal memory
 
     for (uint64_t addr = UART0_BASE; addr <= UART0_BASE; addr += GRANULE_4KB)
@@ -142,9 +144,20 @@ void mmu_init() {
     for (uint64_t addr = GICD_BASE; addr <= GICD_BASE + 0x12000; addr += GRANULE_4KB)
         mmu_map_4kb(addr, addr, MAIR_IDX_DEVICE, 1); // Map GIC as device memory
 
-    kprintf_raw("Shared memory %h", get_shared_start());
     for (uint64_t addr = get_shared_start(); addr <= get_shared_end(); addr += GRANULE_4KB)
         mmu_map_4kb(addr, addr, MAIR_IDX_NORMAL, 2); // Map shared memory as normal memory
+
+    uint64_t dstart;
+    uint64_t dsize;
+    dtb_addresses(&dstart, &dsize);
+    for (uint64_t addr = dstart; addr <= dstart + dsize; addr += GRANULE_4KB)
+        mmu_map_4kb(addr, addr, MAIR_IDX_NORMAL, 1); // Map DTB as normal memory
+
+    uint64_t diskstart = get_disk_address();
+    uint64_t disksize = get_disk_size();
+    kprintf("Disk device size %h", disksize);
+    for (uint64_t addr = diskstart; addr <= diskstart + disksize; addr += GRANULE_4KB)
+        mmu_map_4kb(addr, addr, MAIR_IDX_DEVICE, 1); // Map Disk device as device memory
 
     uint64_t mair = (MAIR_DEVICE_nGnRnE << (MAIR_IDX_DEVICE * 8)) | (MAIR_NORMAL_NOCACHE << (MAIR_IDX_NORMAL * 8));
     asm volatile ("msr mair_el1, %0" :: "r"(mair)); // Set MAIR_EL1 register
@@ -192,6 +205,12 @@ static inline void mmu_flush_icache() {
         "ic iallu\n"    // Invalidate all instruction caches to PoU
         "isb\n"         // Ensure completion before continuing
     );
+}
+
+void register_device_memory(uint64_t va, uint64_t pa) {
+    mmu_map_4kb(va, pa, MAIR_IDX_DEVICE, 1);
+    mmu_flush_all();
+    mmu_flush_icache();
 }
 
 void register_proc_memory(uint64_t va, uint64_t pa, bool kernel) {
