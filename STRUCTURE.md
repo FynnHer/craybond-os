@@ -103,7 +103,7 @@ graph TB
 ### Graphics (`/graph/`)
 | Component | Purpose |
 |-----------|---------|
-| `graphics.c/h` | Core graphics rendering |
+| `graphics.c/h` | Core graphics rendering using RAMFB or VIRTIO GPU |
 | `graphic_types.h` | Graphics data structures |
 | `font8x8_basic.h` | 8x8 bitmap font data |
 | `drivers/ramfb_driver/` | RAM framebuffer driver |
